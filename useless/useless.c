@@ -9,7 +9,6 @@
 
 #define MAX_STRING_LEN 256
 
-
 void skip_char_type (char **s, int space)
 {
 	while (**s && ((isspace (**s) != 0) ? 1 : 0) == space)
@@ -28,8 +27,9 @@ int main ()
 	char *cmd_args [20];
 	int cmd_arg_c;
 	size_t len;
+	FILE *fconf;
 
-	FILE *fconf = fopen ("useless.conf", "r");
+	fconf = fopen ("useless.conf", "r");
 	if (fconf == NULL)
 	{
 		printf ("configuration file not found!\n");
