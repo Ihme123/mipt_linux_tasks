@@ -2,18 +2,32 @@
 #include <dirent.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
+#include <errno.h>
 
 #define err(format, args...) \
-	fprintf (stderr, format "\n", ## args)
+	fprintf (stderr, "backup: " \
+		format "%s%s\n", \
+		## args, \
+		errno ? "\n\terror type: " : "", \
+		errno ? strerror (errno) : "")
 
-void backup_dir (const char *backup, const char *source)
+int backup_dir (const char *backup, const char *source)
 {
 	DIR *source_dir;
+	struct dirent *dp;
 
 	source_dir = opendir (source);
 	if (source_dir == NULL) {
-		err ("error - 0x%x", 100);
+		err ("can't open source directory: %s", source);
+		return -1;
 	}
+
+	while ((dp = readdir (dir)) != NULL) {
+		...
+	}
+
+	return 0;
 }
 
 int main (int argc, char *argv [])
