@@ -1,7 +1,7 @@
 
 void create_backup (const char *backup, const char *source)
 {
-	DIR *
+	DIR *... =  opendir
 }
 
 int main (int argc, char *argv [])
