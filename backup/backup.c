@@ -7,6 +7,8 @@
 
 #include <sys/stat.h>
 
+const size_t MAX_STRING_LEN = 256;
+
 #define err(format, args...) \
 	fprintf (stderr, "backup error: " \
 		format "%s%s\n", \

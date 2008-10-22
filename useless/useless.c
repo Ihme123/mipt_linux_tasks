@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include <errno.h>
 
-#define MAX_STRING_LEN 256
+const size_t MAX_STRING_LEN = 256;
 
 void skip_char_type (char **s, int space)
 {
