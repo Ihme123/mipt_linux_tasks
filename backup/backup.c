@@ -20,11 +20,23 @@ const size_t MAX_STRING_LEN = 256;
 	fprintf (stdout, "backup info: " \
 		format "\n", ## args)
 
-int backup_dir_contents (const char *backup, const char *source)
+void concat_path (char *output, const char *path_a, const char *path_b)
+{
+	strcpy (output, path_a);
+	strcat (output, "/");
+	strcat (output, path_b);
+}
+
+/** backup all objects in the given directory
+ *
+ */
+int backup_dir_contents (const char *source, const char *backup)
 {
 	DIR *source_dir;
 	struct dirent *next;
 	struct stat file_stat;
+	char source_object [MAX_STRING_LEN];
+	char backup_object [MAX_STRING_LEN];
 
 	source_dir = opendir (source);
 	if (source_dir == NULL) {
@@ -36,8 +48,9 @@ int backup_dir_contents (const char *backup, const char *source)
 		if (!strcmp (next->d_name, ".") || !strcmp (next->d_name, ".."))
 			info ("skipping \"%s\"", next->d_name);
 		else {
-			strcat ();
-			backup_object ();
+			concat_path (source_object, source, next->d_name);
+			concat_path (backup_object, backup, next->d_name);
+			backup_object (source_object, backup_object);
 		}
 
 		info ("d_name = [%s]", next->d_name);
@@ -68,7 +81,7 @@ int main (int argc, char *argv [])
 		return 1;
 	}
 
-	backup_dir (argv [2], argv [1]);
+	backup_dir (argv [1], argv [2]);
 
 	return 0;
 }
