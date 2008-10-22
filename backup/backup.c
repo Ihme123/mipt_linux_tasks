@@ -27,6 +27,29 @@ void concat_path (char *output, const char *path_a, const char *path_b)
 	strcat (output, path_b);
 }
 
+int backup_object (const char *source, const char *backup)
+{
+	info ("d_name = [%s]", source);
+
+	struct stat file_stat;
+	if (stat (next->d_name) != 0) {
+		err ("stat failed");
+		return -1;
+	}
+
+	switch (next->d_type) {
+	case DT_BLK:  info ("%s is a block device", next->d_name);     break;
+	case DT_CHR:  info ("%s is a character device", next->d_name); break;
+	case DT_FIFO: info ("%s is a fifo", next->d_name);             break;
+	case DT_LNK:  err ("FIXME: symbolic link backups are not implemented! %s", next->d_name); break;
+	case DT_REG:  err ("FIXME: reg. file %s", next->d_name); break;
+	case DT_SOCK: info ("%s is a socket", next->d_name);           break;
+	default: err ("unknown file type");
+	}
+
+	return 0;
+}
+
 /** backup all objects in the given directory
  *
  */
@@ -34,9 +57,8 @@ int backup_dir_contents (const char *source, const char *backup)
 {
 	DIR *source_dir;
 	struct dirent *next;
-	struct stat file_stat;
-	char source_object [MAX_STRING_LEN];
-	char backup_object [MAX_STRING_LEN];
+	char source_obj_path [MAX_STRING_LEN];
+	char backup_obj_path [MAX_STRING_LEN];
 
 	source_dir = opendir (source);
 	if (source_dir == NULL) {
@@ -48,26 +70,9 @@ int backup_dir_contents (const char *source, const char *backup)
 		if (!strcmp (next->d_name, ".") || !strcmp (next->d_name, ".."))
 			info ("skipping \"%s\"", next->d_name);
 		else {
-			concat_path (source_object, source, next->d_name);
-			concat_path (backup_object, backup, next->d_name);
-			backup_object (source_object, backup_object);
-		}
-
-		info ("d_name = [%s]", next->d_name);
-
-		if (stat (next->d_name) != 0) {
-			err ("stat failed");
-			return -1;
-		}
-
-		switch (next->d_type) {
-		case DT_BLK:  info ("%s is a block device", next->d_name);     break;
-		case DT_CHR:  info ("%s is a character device", next->d_name); break;
-		case DT_FIFO: info ("%s is a fifo", next->d_name);             break;
-		case DT_LNK:  err ("FIXME: symbolic link backups are not implemented! %s", next->d_name); break;
-		case DT_REG:  err ("FIXME: reg. file %s", next->d_name); break;
-		case DT_SOCK: info ("%s is a socket", next->d_name);           break;
-		default: err ("unknown file type");
+			concat_path (source_obj_path, source, next->d_name);
+			concat_path (backup_obj_path, backup, next->d_name);
+			backup_object (source_obj_path, backup_obj_path);
 		}
 	}
 
@@ -81,7 +86,7 @@ int main (int argc, char *argv [])
 		return 1;
 	}
 
-	backup_dir (argv [1], argv [2]);
+	backup_dir_contents (argv [1], argv [2]);
 
 	return 0;
 }
