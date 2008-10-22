@@ -5,9 +5,13 @@
 #include <string.h>
 #include <errno.h>
 
+#include <sys/types.h>
 #include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 const size_t MAX_STRING_LEN = 256;
+const size_t COPY_BUFFER_SZ = 512;
 
 #define err(format, args...) \
 	fprintf (stderr, "backup error: " \
@@ -27,26 +31,111 @@ void concat_path (char *output, const char *path_a, const char *path_b)
 	strcat (output, path_b);
 }
 
-int backup_regular_file (const char *source, const char *backup)
+int verbose_open (const char *pathname, int flags)
 {
 	int fd;
 
-	fd = open (source, O_RDONLY);
-	close (fd);
+	fd = open (pathname, flags);
+	if (fd == -1)
+		err ("can't open file %s", pathname);
+
+	return fd;
+}
+
+int verbose_close (int fd, const char *name)
+{
+	int result;
+
+	result = close (fd);
+	if (fd != 0)
+		err ("can't close file (%s)", name);
+
+	return result;
+}
+
+int backup_regular_file (const char *source, const char *backup)
+{
+	int source_fd; // source file descriptor
+	int backup_fd; // backup file descriptor
+	u_int8_t buffer [COPY_BUFFER_SZ];
+	int result;
+	ssize_t read_result;
+
+	source_fd = verbose_open (source, O_RDONLY);
+	if (source_fd == -1)
+		return -1;
+
+	backup_fd = verbose_open (backup, O_WRONLY | O_TRUNC);
+	if (backup_fd == -1) {
+		verbose_close (source_fd, source);
+		return -1;
+	}
+
+	result = 0;
+	for (;;) {
+		read_result = read (source_fd, buffer, COPY_BUFFER_SZ);
+		if (read_result < 0) {
+			err ("can't read from source file %s", source);
+			result = -1;
+			break;
+		}
+
+		// TODO: write
+
+		if (read_result < COPY_BUFFER_SZ) { // copy finished
+			break;
+		}
+	}
+
+	if (verbose_close (backup_fd, source) != 0)
+		result = -1;
+	if (verbose_close (source_fd, source) != 0)
+		result = -1;
+
+	// TODO: gzip
+
+	return 0;
 }
 
 int backup_object (const char *source, const char *backup)
 {
-	struct stat file_stat;
+	struct stat source_stat;
+	struct stat backup_stat;
+	char gzip_backup [MAX_STRING_LEN];
+	int result;
 
-	info ("d_name = [%s]", source);
-	
-	if (stat (source, &file_stat) != 0) {
-		err ("stat failed");
+	strcpy (gzip_backup, backup);
+	strcat (gzip_backup, ".gz");
+
+	result = stat (source, &source_stat);
+	if (result != 0) {
+		err ("source stat failed");
 		return -1;
 	}
 
-	switch (file_stat.st_mode) {
+	result = stat (gzip_backup, &backup_stat);
+	if (result == -ENOENT) {
+		info ("creating new backup for %s", source);
+	} else if (result == 0) {
+		info ("updating backup for %s", source);
+	} else {
+		err ("backup stat failed");
+		return -1;
+	}
+
+	// if backup already exists and file types don't match
+	if (result == 0 && source_stat.st_mode != backup_stat.st_mode) {
+		err ("types of source and backup differ (source: %s, backup: %s)",
+			source, gzip_backup);
+		return -1;
+	}
+
+	if (backup_stat.st_mtime >= source_stat.st_mtime) {
+		info ("backup file %s is already up-to-date", gzip_backup);
+		return 0;
+	}
+
+	switch (source_stat.st_mode) {
 	case S_IFREG:  return backup_regular_file (source, backup);
 	case S_IFLNK:  info ("symbolic link backups are not implemented (%s)", source); break;
 
