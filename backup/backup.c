@@ -114,7 +114,7 @@ int backup_object (const char *source, const char *backup)
 	}
 
 	result = stat (gzip_backup, &backup_stat);
-	if (result == -ENOENT) {
+	if (result == -1 && errno == ENOENT) {
 		info ("creating new backup for %s", source);
 	} else if (result == 0) {
 		info ("updating backup for %s", source);
