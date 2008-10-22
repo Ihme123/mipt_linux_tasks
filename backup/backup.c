@@ -7,6 +7,7 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <fcntl.h>
 #include <unistd.h>
 
@@ -42,6 +43,17 @@ int verbose_open (const char *pathname, int flags)
 	return fd;
 }
 
+int verbose_open_mode (const char *pathname, int flags, mode_t mode)
+{
+	int fd;
+
+	fd = open (pathname, flags, mode);
+	if (fd == -1)
+		err ("can't create file %s", pathname);
+
+	return fd;
+}
+
 int verbose_close (int fd, const char *name)
 {
 	int result;
@@ -51,6 +63,36 @@ int verbose_close (int fd, const char *name)
 		err ("can't close file (%s)", name);
 
 	return result;
+}
+
+int run_gzip (const char *pathname)
+{
+	pid_t pid;
+	int status;
+	pid_t wait_result;
+
+	pid = fork ();
+	if (pid < 0) {
+		err ("fork failed");
+		return -1;
+	} else if (pid == 0) { // child
+		execl ("/bin/gzip", "/bin/gzip", pathname, NULL);
+		err ("exec failed");
+		return -1;
+	} else { // parent
+		wait_result = wait (&status);
+		if (wait_result < 0) {
+			err ("wait failed");
+			return -1;
+		}
+
+		if (status != 0) {
+			err ("gzip terminated with error code %d", status);
+			return -1;
+		}
+	}
+
+	return 0;
 }
 
 int backup_regular_file (const char *source, const char *backup)
@@ -65,17 +107,15 @@ int backup_regular_file (const char *source, const char *backup)
 	if (source_fd == -1)
 		return -1;
 
-	backup_fd = verbose_open (backup,
-		O_WRONLY | O_TRUNC | O_CREAT | S_IRUSR | S_IWUSR/* | S_IRGRP | S_IROTH*/);
+//	umask (S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+
+	backup_fd = verbose_open_mode (backup,
+		O_WRONLY | O_TRUNC | O_CREAT,
+		S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 	if (backup_fd == -1) {
 		verbose_close (source_fd, source);
 		return -1;
 	}
-
-	
-//	sleep (1000);
-
-
 
 	result = 0;
 	for (;;) {
@@ -104,7 +144,11 @@ int backup_regular_file (const char *source, const char *backup)
 	if (verbose_close (source_fd, source) != 0)
 		result = -1;
 
-	// TODO: gzip
+	if (result < 0)
+		return -1;
+
+	if (run_gzip (backup) < 0)
+		return -1;
 
 	return 0;
 }
