@@ -5,6 +5,8 @@
 #include <string.h>
 #include <errno.h>
 
+#include <sys/stat.h>
+
 #define err(format, args...) \
 	fprintf (stderr, "backup error: " \
 		format "%s%s\n", \
@@ -16,10 +18,11 @@
 	fprintf (stdout, "backup info: " \
 		format "\n", ## args)
 
-int backup_dir (const char *backup, const char *source)
+int backup_dir_contents (const char *backup, const char *source)
 {
 	DIR *source_dir;
 	struct dirent *next;
+	struct stat file_stat;
 
 	source_dir = opendir (source);
 	if (source_dir == NULL) {
@@ -28,6 +31,20 @@ int backup_dir (const char *backup, const char *source)
 	}
 
 	while ((next = readdir (source_dir)) != NULL) {
+		if (!strcmp (next->d_name, ".") || !strcmp (next->d_name, ".."))
+			info ("skipping \"%s\"", next->d_name);
+		else {
+			strcat ();
+			backup_object ();
+		}
+
+		info ("d_name = [%s]", next->d_name);
+
+		if (stat (next->d_name) != 0) {
+			err ("stat failed");
+			return -1;
+		}
+
 		switch (next->d_type) {
 		case DT_BLK:  info ("%s is a block device", next->d_name);     break;
 		case DT_CHR:  info ("%s is a character device", next->d_name); break;
@@ -44,8 +61,6 @@ int backup_dir (const char *backup, const char *source)
 
 int main (int argc, char *argv [])
 {
-	err ("my error - 0x%x", 100);
-
 	if (argc != 3) {
 		err ("Usage: backup <src-dir> <dest-dir>");
 		return 1;
