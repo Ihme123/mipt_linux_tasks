@@ -65,14 +65,15 @@ int backup_regular_file (const char *source, const char *backup)
 	if (source_fd == -1)
 		return -1;
 
-	backup_fd = verbose_open (backup, O_WRONLY | O_TRUNC);
+	backup_fd = verbose_open (backup,
+		O_WRONLY | O_TRUNC | O_CREAT | S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 	if (backup_fd == -1) {
 		verbose_close (source_fd, source);
 		return -1;
 	}
 
 	result = 0;
-	for (;;) {
+/*	for (;;) {
 		read_result = read (source_fd, buffer, COPY_BUFFER_SZ);
 		if (read_result < 0) {
 			err ("can't read from source file %s", source);
@@ -85,7 +86,7 @@ int backup_regular_file (const char *source, const char *backup)
 		if (read_result < COPY_BUFFER_SZ) { // copy finished
 			break;
 		}
-	}
+	}*/
 
 	if (verbose_close (backup_fd, source) != 0)
 		result = -1;
@@ -118,33 +119,38 @@ int backup_object (const char *source, const char *backup)
 		info ("creating new backup for %s", source);
 	} else if (result == 0) {
 		info ("updating backup for %s", source);
+
+		// if backup already exists and file types don't match
+		if (source_stat.st_mode != backup_stat.st_mode) {
+			err ("types of source and backup differ (source: %s, backup: %s)",
+				source, gzip_backup);
+			return -1;
+		}
+
+		if (backup_stat.st_mtime >= source_stat.st_mtime) {
+			info ("backup file %s is already up-to-date", gzip_backup);
+			return 0;
+		}
 	} else {
 		err ("backup stat failed");
 		return -1;
 	}
 
-	// if backup already exists and file types don't match
-	if (result == 0 && source_stat.st_mode != backup_stat.st_mode) {
-		err ("types of source and backup differ (source: %s, backup: %s)",
-			source, gzip_backup);
+	if (source_stat.st_mode & S_IFREG)
+		return backup_regular_file (source, backup);
+	else if (source_stat.st_mode & S_IFLNK)
+		info ("symbolic link backups are not implemented (%s)", source);
+	else if (source_stat.st_mode & S_IFBLK)
+		info ("%s is a block device", source);
+	else if (source_stat.st_mode & S_IFCHR)
+		info ("%s is a character device", source);
+	else if (source_stat.st_mode & S_IFIFO)
+		info ("%s is a fifo", source);
+	else if (source_stat.st_mode & S_IFSOCK)
+		info ("%s is a socket", source);
+	else {
+		err ("unknown file type (0x%08x): %s", source_stat.st_mode, source);
 		return -1;
-	}
-
-	if (backup_stat.st_mtime >= source_stat.st_mtime) {
-		info ("backup file %s is already up-to-date", gzip_backup);
-		return 0;
-	}
-
-	switch (source_stat.st_mode) {
-	case S_IFREG:  return backup_regular_file (source, backup);
-	case S_IFLNK:  info ("symbolic link backups are not implemented (%s)", source); break;
-
-	case S_IFBLK:  info ("%s is a block device", source);     break;
-	case S_IFCHR:  info ("%s is a character device", source); break;
-	case S_IFIFO:  info ("%s is a fifo", source);             break;
-	case S_IFSOCK: info ("%s is a socket", source);           break;
-
-	default: err ("unknown file type: %s", source);           break;
 	}
 
 	return 0;
