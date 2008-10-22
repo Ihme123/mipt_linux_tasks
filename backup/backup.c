@@ -27,24 +27,35 @@ void concat_path (char *output, const char *path_a, const char *path_b)
 	strcat (output, path_b);
 }
 
+int backup_regular_file (const char *source, const char *backup)
+{
+	int fd;
+
+	fd = open (source, O_RDONLY);
+	close (fd);
+}
+
 int backup_object (const char *source, const char *backup)
 {
-	info ("d_name = [%s]", source);
-
 	struct stat file_stat;
-	if (stat (next->d_name) != 0) {
+
+	info ("d_name = [%s]", source);
+	
+	if (stat (source, &file_stat) != 0) {
 		err ("stat failed");
 		return -1;
 	}
 
-	switch (next->d_type) {
-	case DT_BLK:  info ("%s is a block device", next->d_name);     break;
-	case DT_CHR:  info ("%s is a character device", next->d_name); break;
-	case DT_FIFO: info ("%s is a fifo", next->d_name);             break;
-	case DT_LNK:  err ("FIXME: symbolic link backups are not implemented! %s", next->d_name); break;
-	case DT_REG:  err ("FIXME: reg. file %s", next->d_name); break;
-	case DT_SOCK: info ("%s is a socket", next->d_name);           break;
-	default: err ("unknown file type");
+	switch (file_stat.st_mode) {
+	case S_IFREG:  return backup_regular_file (source, backup);
+	case S_IFLNK:  info ("symbolic link backups are not implemented (%s)", source); break;
+
+	case S_IFBLK:  info ("%s is a block device", source);     break;
+	case S_IFCHR:  info ("%s is a character device", source); break;
+	case S_IFIFO:  info ("%s is a fifo", source);             break;
+	case S_IFSOCK: info ("%s is a socket", source);           break;
+
+	default: err ("unknown file type: %s", source);           break;
 	}
 
 	return 0;
@@ -72,7 +83,8 @@ int backup_dir_contents (const char *source, const char *backup)
 		else {
 			concat_path (source_obj_path, source, next->d_name);
 			concat_path (backup_obj_path, backup, next->d_name);
-			backup_object (source_obj_path, backup_obj_path);
+			if (backup_object (source_obj_path, backup_obj_path) < 0)
+				return -1;
 		}
 	}
 
@@ -86,8 +98,6 @@ int main (int argc, char *argv [])
 		return 1;
 	}
 
-	backup_dir_contents (argv [1], argv [2]);
-
-	return 0;
+	return backup_dir_contents (argv [1], argv [2]);
 }
 
