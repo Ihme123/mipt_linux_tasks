@@ -47,7 +47,7 @@ int verbose_close (int fd, const char *name)
 	int result;
 
 	result = close (fd);
-	if (fd != 0)
+	if (result != 0)
 		err ("can't close file (%s)", name);
 
 	return result;
@@ -66,29 +66,40 @@ int backup_regular_file (const char *source, const char *backup)
 		return -1;
 
 	backup_fd = verbose_open (backup,
-		O_WRONLY | O_TRUNC | O_CREAT | S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+		O_WRONLY | O_TRUNC | O_CREAT | S_IRUSR | S_IWUSR/* | S_IRGRP | S_IROTH*/);
 	if (backup_fd == -1) {
 		verbose_close (source_fd, source);
 		return -1;
 	}
 
+	
+//	sleep (1000);
+
+
+
 	result = 0;
-/*	for (;;) {
+	for (;;) {
 		read_result = read (source_fd, buffer, COPY_BUFFER_SZ);
 		if (read_result < 0) {
 			err ("can't read from source file %s", source);
 			result = -1;
 			break;
+		} else if (read_result == 0) { // copy finished
+			break;
 		}
 
-		// TODO: write
+		if (write (backup_fd, buffer, read_result) != read_result) {
+			err ("write to backup file failed\n");
+			result = -1;
+			break;
+		}
 
 		if (read_result < COPY_BUFFER_SZ) { // copy finished
 			break;
 		}
-	}*/
+	}
 
-	if (verbose_close (backup_fd, source) != 0)
+	if (verbose_close (backup_fd, backup) != 0)
 		result = -1;
 	if (verbose_close (source_fd, source) != 0)
 		result = -1;
