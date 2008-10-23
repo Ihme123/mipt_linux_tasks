@@ -153,6 +153,12 @@ int backup_regular_file (const char *source, const char *backup)
 	return 0;
 }
 
+int backup_directory (const char *source, const char *backup)
+{
+	err ("stub");
+	return -1;
+}
+
 int backup_object (const char *source, const char *backup)
 {
 	struct stat source_stat;
@@ -160,14 +166,15 @@ int backup_object (const char *source, const char *backup)
 	char gzip_backup [MAX_STRING_LEN];
 	int result;
 
-	strcpy (gzip_backup, backup);
-	strcat (gzip_backup, ".gz");
-
 	result = stat (source, &source_stat);
 	if (result != 0) {
 		err ("source stat failed");
 		return -1;
 	}
+
+	strcpy (gzip_backup, backup);
+	if ((source_stat.st_mode & S_IFMT) == S_IFREG)
+		strcat (gzip_backup, ".gz");
 
 	result = stat (gzip_backup, &backup_stat);
 	if (result == -1 && errno == ENOENT) {
@@ -182,7 +189,7 @@ int backup_object (const char *source, const char *backup)
 			return -1;
 		}
 
-		if (backup_stat.st_mtime >= source_stat.st_mtime) {
+		if ((source_stat.st_mode & S_IFMT) == S_IFREG && backup_stat.st_mtime >= source_stat.st_mtime) {
 			info ("backup file %s is already up-to-date", gzip_backup);
 			return 0;
 		}
@@ -193,6 +200,8 @@ int backup_object (const char *source, const char *backup)
 
 	if ((source_stat.st_mode & S_IFMT) == S_IFREG)
 		return backup_regular_file (source, backup);
+	else if ((source_stat.st_mode & S_IFMT) == S_IFDIR)
+		return backup_directory (source, backup);
 	else if ((source_stat.st_mode & S_IFMT) == S_IFLNK)
 		info ("symbolic link backups are not implemented (%s)", source);
 	else if ((source_stat.st_mode & S_IFMT) == S_IFBLK)
