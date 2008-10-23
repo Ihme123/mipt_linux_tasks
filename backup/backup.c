@@ -25,6 +25,9 @@ const size_t COPY_BUFFER_SZ = 512;
 	fprintf (stdout, "backup info: " \
 		format "\n", ## args)
 
+int backup_dir_contents (const char *source, const char *backup);
+
+
 void concat_path (char *output, const char *path_a, const char *path_b)
 {
 	strcpy (output, path_a);
@@ -155,8 +158,20 @@ int backup_regular_file (const char *source, const char *backup)
 
 int backup_directory (const char *source, const char *backup)
 {
-	err ("stub");
-	return -1;
+	if (mkdir (backup, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) != 0) {
+		if (errno == EEXIST) {
+			// this is necessarily a directory,
+			// because "backup_object" checks the
+			// backup type to match the source file type
+			info ("directory %s already exists", backup);
+			return 0;
+		}
+
+		err ("mkdir failed");
+		return -1;
+	}
+
+	return backup_dir_contents (source, backup);
 }
 
 int backup_object (const char *source, const char *backup)
