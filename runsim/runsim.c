@@ -1,15 +1,34 @@
 
 #include <unistd.h>
+#include <signal.h>
+#include <sys/wait.h>
 
 #include "../lib/lib.h"
 
 #define APP_NAME "runsim"
 
+static int running_count;
+static int N;
+
+void sigchild_handler (int signum)
+{
+	int status;
+
+	// no synchronization needed,
+	// there's no concurrent threads (am I wrong?)
+	running_count --;
+	wait (&status); // killing zombies!!!
+}
+
 int try_run (char *cmd)
 {
 	pid_t pid;
 	char *cmd_args [MAX_PROGRAM_ARGS];
-	// TODO: check the number of running processes
+
+	if (running_count >= N) {
+		info ("%d programs are already running", N);
+		return -1;
+	}
 
 	parse_args (cmd, cmd_args);
 
@@ -22,7 +41,7 @@ int try_run (char *cmd)
 		err ("exec failed");
 		return -1;
 	} else { // parent
-		usleep (100000);
+		running_count ++;
 		return 0;
 	}
 }
@@ -34,7 +53,6 @@ void usage ()
 
 int main (int argc, char *argv [])
 {
-	int N;
 	char reverse_conv [MAX_STRING_LEN];
 	char cmd [MAX_STRING_LEN + 1];
 	size_t len;
@@ -54,6 +72,12 @@ int main (int argc, char *argv [])
 		return 1;
 	}
 
+	if (signal (SIGCHLD, sigchild_handler) == SIG_ERR) {
+		err ("signal failed");
+		return 1;
+	}
+
+	running_count = 0;
 	while (1) {
 		if (fgets (cmd, MAX_STRING_LEN, stdin) == NULL) {
 			break;
