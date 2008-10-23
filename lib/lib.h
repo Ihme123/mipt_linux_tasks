@@ -4,7 +4,8 @@
 #include <errno.h>
 #include <string.h>
 
-const size_t MAX_STRING_LEN = 256;
+//const size_t MAX_STRING_LEN = 256;
+#define MAX_STRING_LEN 256
 
 #define err(format, args...) \
 	fprintf (stderr, APP_NAME " error: " \
@@ -16,4 +17,11 @@ const size_t MAX_STRING_LEN = 256;
 #define info(format, args...) \
 	fprintf (stdout, APP_NAME " info: " \
 		format "\n", ## args)
+
+
+void __skip_char_type (char **s, int space);
+#define skip_space(s) __skip_char_type (&(s), 1)
+#define skip_not_space(s) __skip_char_type (&(s), 0)
+
+void parse_args (char *s, char *cmd_args []);
 
