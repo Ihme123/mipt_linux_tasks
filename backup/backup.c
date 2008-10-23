@@ -191,17 +191,17 @@ int backup_object (const char *source, const char *backup)
 		return -1;
 	}
 
-	if (source_stat.st_mode & S_IFREG)
+	if ((source_stat.st_mode & S_IFMT) == S_IFREG)
 		return backup_regular_file (source, backup);
-	else if (source_stat.st_mode & S_IFLNK)
+	else if ((source_stat.st_mode & S_IFMT) == S_IFLNK)
 		info ("symbolic link backups are not implemented (%s)", source);
-	else if (source_stat.st_mode & S_IFBLK)
+	else if ((source_stat.st_mode & S_IFMT) == S_IFBLK)
 		info ("%s is a block device", source);
-	else if (source_stat.st_mode & S_IFCHR)
+	else if ((source_stat.st_mode & S_IFMT) == S_IFCHR)
 		info ("%s is a character device", source);
-	else if (source_stat.st_mode & S_IFIFO)
+	else if ((source_stat.st_mode & S_IFMT) == S_IFIFO)
 		info ("%s is a fifo", source);
-	else if (source_stat.st_mode & S_IFSOCK)
+	else if ((source_stat.st_mode & S_IFMT) == S_IFSOCK)
 		info ("%s is a socket", source);
 	else {
 		err ("unknown file type (0x%08x): %s", source_stat.st_mode, source);
