@@ -11,22 +11,14 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-const size_t MAX_STRING_LEN = 256;
+#include "../lib/lib.h"
+
 const size_t COPY_BUFFER_SZ = 512;
 
-#define err(format, args...) \
-	fprintf (stderr, "backup error: " \
-		format "%s%s\n", \
-		## args, \
-		errno ? "\n\terror type: " : "", \
-		errno ? strerror (errno) : "")
+#define APP_NAME "backup"
 
-#define info(format, args...) \
-	fprintf (stdout, "backup info: " \
-		format "\n", ## args)
 
 int backup_dir_contents (const char *source, const char *backup);
-
 
 void concat_path (char *output, const char *path_a, const char *path_b)
 {
