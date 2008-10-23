@@ -1,5 +1,5 @@
 
-#include <stdlib.h>
+#include <unistd.h>
 
 #include "../lib/lib.h"
 
@@ -7,8 +7,21 @@
 
 int try_run (const char *cmd)
 {
-	info ("cmd = %s", cmd);
-	return 0;
+	pid_t pid;
+	// TODO: check the number of running processes
+
+	pid = fork ();
+	if (pid < 0) {
+		err ();
+		return -1;
+	} else if (pid == 0) { // child
+		execlp (cmd, cmd, NULL);
+		err ("exec failed");
+		return -1;
+	} else { // parent
+		usleep (100000);
+		return 0;
+	}
 }
 
 void usage ()
@@ -39,19 +52,23 @@ int main (int argc, char *argv [])
 	}
 
 	while (1) {
+		printf ("C:\\> ");
 		if (fgets (cmd, MAX_STRING_LEN, stdin) == NULL) {
 			err ("exit...");
+			break;
 		}
 
 		len = strlen (cmd);
 		if (cmd [len - 1] != '\n') {
 			err ("read 'half a string'...exit...");
+			break;
 		} else {
 			cmd [len - 1] = 0;
 			try_run (cmd);
 		}
 	}
 
+//	printf ("\n");
 	return 0;
 }
 
