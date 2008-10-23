@@ -16,7 +16,7 @@ int main ()
 	int delay;
 	char *cmd;
 	pid_t pid;
-	char *cmd_args [20];
+	char *cmd_args [MAX_PROGRAM_ARGS];
 	size_t len;
 	FILE *fconf;
 	int i;

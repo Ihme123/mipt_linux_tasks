@@ -5,17 +5,20 @@
 
 #define APP_NAME "runsim"
 
-int try_run (const char *cmd)
+int try_run (char *cmd)
 {
 	pid_t pid;
+	char *cmd_args [MAX_PROGRAM_ARGS];
 	// TODO: check the number of running processes
+
+	parse_args (cmd, cmd_args);
 
 	pid = fork ();
 	if (pid < 0) {
 		err ();
 		return -1;
 	} else if (pid == 0) { // child
-		execlp (cmd, cmd, NULL);
+		execvp (cmd_args [0], cmd_args);
 		err ("exec failed");
 		return -1;
 	} else { // parent
@@ -52,9 +55,7 @@ int main (int argc, char *argv [])
 	}
 
 	while (1) {
-		printf ("C:\\> ");
 		if (fgets (cmd, MAX_STRING_LEN, stdin) == NULL) {
-			err ("exit...");
 			break;
 		}
 
@@ -68,7 +69,6 @@ int main (int argc, char *argv [])
 		}
 	}
 
-//	printf ("\n");
 	return 0;
 }
 
