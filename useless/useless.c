@@ -51,10 +51,12 @@ int main ()
 		if (pid == 0) {
 			sleep (delay);
 
-			for (i = 0; cmd_args [i] != NULL; i ++)
+			for (i = 0; cmd_args [i] != NULL; i ++) {
 				printf ("%s%s",
 					i == 0 ? "Starting program: " : " ",
 					cmd_args [i]);
+			}
+			printf ("\n");
 
 			execvp (cmd_args [0], cmd_args);
 			printf ("execvp failed! (error: %s)\n", strerror (errno));
