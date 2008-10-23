@@ -1,2 +1,4 @@
-useless: useless.c ../lib/lib.c
-	$(CC) -Wall -g -o useless useless.c ../lib/lib.c
+CFLAGS = -Wall -g
+OBJECTS = useless.o ../lib/lib.o
+all: $(OBJECTS)
+	$(CC) $(OBJECTS) -o useless

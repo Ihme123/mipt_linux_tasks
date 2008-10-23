@@ -1,2 +1,5 @@
-backup: backup.c
-	$(CC) -Wall -g -o backup backup.c
+CFLAGS = -Wall -g
+OBJECTS = backup.o
+all: $(OBJECTS)
+	$(CC) $(OBJECTS) -o backup
+

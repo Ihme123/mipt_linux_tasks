@@ -1,2 +1,4 @@
-runsim: runsim.c ../lib/lib.c
-	$(CC) -Wall -g -o runsim runsim.c ../lib/lib.c
+CFLAGS = -Wall -g
+OBJECTS = runsim.o ../lib/lib.o
+all: $(OBJECTS)
+	$(CC) $(OBJECTS) -o runsim
