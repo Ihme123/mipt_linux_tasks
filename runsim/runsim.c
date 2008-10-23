@@ -39,7 +39,7 @@ int try_run (char *cmd)
 	} else if (pid == 0) { // child
 		execvp (cmd_args [0], cmd_args);
 		err ("exec failed");
-		return -1;
+		exit (1);
 	} else { // parent
 		running_count ++;
 		return 0;
