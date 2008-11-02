@@ -1,4 +1,5 @@
 *.o
+*.so
 useless/useless
 backup/backup
 backup/test
