@@ -8,11 +8,12 @@
 #define APP_NAME "libwasher"
 
 
-ssize_t file_read_line (char **line, FILE *f)
+static ssize_t file_read_line (char **line, FILE *f)
 {
 	size_t len;
 	ssize_t res;
 
+	*line = NULL;
 	res = getline (line, &len, f);
 	if (res == -1) {
 		err ("can't read line");
@@ -21,12 +22,12 @@ ssize_t file_read_line (char **line, FILE *f)
 	return res;
 }
 
-int config_line_ok (const char *line)
+static int config_line_ok (const char *line)
 {
 	return strchr (line, ':') != NULL;
 }
 
-struct washer_config_list_node *washer_config_list_alloc (
+static struct washer_config_list_node *washer_config_list_alloc (
 	struct washer_config_list_node *list)
 {
 	struct washer_config_list_node *node;
@@ -37,7 +38,7 @@ struct washer_config_list_node *washer_config_list_alloc (
 	return node;
 }
 
-struct washer_config_entry *read_configuration (const char *conf_file)
+struct washer_config_list_node *read_configuration (const char *conf_file)
 {
 	FILE *f;
 	int N;
@@ -49,6 +50,7 @@ struct washer_config_entry *read_configuration (const char *conf_file)
 
 	f = fopen (conf_file, "r");
 	if (f == NULL) {
+		err ("read_configuration: can't open file %s", conf_file);
 		return NULL;
 	}
 
@@ -76,5 +78,6 @@ struct washer_config_entry *read_configuration (const char *conf_file)
 	}
 
 	fclose (f);
+	return node;
 }
 
