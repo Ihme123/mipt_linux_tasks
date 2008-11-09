@@ -19,6 +19,11 @@ int main ()
 		return 1;
 
 	for_each_config_entry (pos, input_list) {
+		printf ("input: type = \"%s\", count = %d\n",
+			pos->entry.type, pos->entry.val);
+	}
+
+	for_each_config_entry (pos, performance_list) {
 		printf ("input: type = \"%s\", time = %d\n",
 			pos->entry.type, pos->entry.val);
 	}

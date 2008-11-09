@@ -16,7 +16,7 @@ static ssize_t file_read_line (char **line, FILE *f)
 	*line = NULL;
 	res = getline (line, &len, f);
 	if (res == -1) {
-		err ("can't read line");
+//		err ("can't read line");
 	}
 
 	return res;
@@ -56,10 +56,9 @@ struct washer_config_list_node *read_configuration (const char *conf_file)
 
 	N = 0;
 	node = NULL;
-	while (!feof (f)) {
-		file_read_line (&line, f);
-		if (line == NULL)
-			continue;
+	while (1) {
+		if (file_read_line (&line, f) < 0 || line == NULL)
+			break;
 
 		if (config_line_ok (line)) {
 			node = washer_config_list_alloc (node); // allocate and attach to the list
@@ -73,6 +72,7 @@ struct washer_config_list_node *read_configuration (const char *conf_file)
 			value_str ++;
 			sscanf (value_str, "%d", &entry->val);
 		}
+		else info ("configuration file syntax error: %s", line);
 
 		free (line);
 	}
