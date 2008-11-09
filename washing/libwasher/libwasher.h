@@ -31,6 +31,8 @@ struct transport_descriptor
 {
 	enum TRANSPORT_TYPES type;
 	enum TRANSPORT_DIRECTIONS dir;
+
+	int fd;
 };
 
 int transport_init (struct transport_descriptor *transport,

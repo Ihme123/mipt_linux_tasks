@@ -2,6 +2,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include <fcntl.h>
+#include <sys/stat.h>
+
 #include "../../lib/lib.h"
 #include "libwasher.h"
 
@@ -27,6 +30,7 @@ static int config_line_ok (const char *line)
 	return strchr (line, ':') != NULL;
 }
 
+// allocate and attach to the list
 static struct washer_config_list_node *washer_config_list_alloc (
 	struct washer_config_list_node *list)
 {
@@ -61,7 +65,7 @@ struct washer_config_list_node *read_configuration (const char *conf_file)
 			break;
 
 		if (config_line_ok (line)) {
-			node = washer_config_list_alloc (node); // allocate and attach to the list
+			node = washer_config_list_alloc (node);
 			entry = &node->entry;
 
 			value_str = strchr (line, ':');
@@ -81,19 +85,44 @@ struct washer_config_list_node *read_configuration (const char *conf_file)
 	return node;
 }
 
-int transport_init (struct transport_descriptor *transport,
+static int transport_ok (struct transport_descriptor *tr)
+{
+	return tr->dir == TRANSPORT_IN || tr->dir == TRANSPORT_OUT;
+}
+
+static int transport_init_fifo (struct transport_descriptor *tr)
+{
+	const char filename [] = "transport-fifo";
+
+	if (tr->dir == TRANSPORT_OUT) {
+		if (mkfifo (filename, S_IWUSR | S_IRUSR) < 0) {
+			err ("can't create fifo");
+			return -1;
+		}
+	}
+
+	if ((tr->fd = open (filename, tr->dir == TRANSPORT_OUT ?
+		O_WRONLY : O_RDONLY)) < 0) {
+		err ("can't open fifo");
+		return -1;
+	}
+
+	return 0;
+}
+
+int transport_init (struct transport_descriptor *tr,
 	enum TRANSPORT_TYPES type, enum TRANSPORT_DIRECTIONS dir)
 {
-	if (dir != TRANSPORT_IN && dir != TRANSPORT_OUT)
+	tr->type = type;
+	tr->dir = dir;
+
+	if (!transport_ok (tr))
 		return -1;
 
 	switch (type) {
-	case TRANSPORT_FIFO:
+	case TRANSPORT_FIFO: return transport_init_fifo (tr);
 	default: err ("bad transport type"); return -1;
 	}
-
-	transport->type = type;
-	transport->dir = type;
 	return 0;
 }
 
@@ -110,21 +139,35 @@ struct washer_config_entry *find_config_entry (
 	return NULL;
 }
 
-int transport_ok (struct transport_descriptor *tr)
+static int transport_push_fifo (struct transport_descriptor *tr,
+	const char *msg)
 {
-	return tr->dir == TRANSPORT_IN || tr->dir == TRANSPORT_OUT;
+	size_t len;
+	ssize_t res;
+
+	len = strlen (msg) + 1;
+
+	res = write (tr->fd, msg, len);
+	if (res < 0) {
+		err ("can't write to fifo");
+		return -1;
+	} else if (res != len) {
+		err ("writing to fifo: partial success");
+		return -1;
+	}
+
+	return 0;
 }
 
-int transport_push (struct transport_descriptor *tr, const char *type)
+int transport_push (struct transport_descriptor *tr, const char *msg)
 {
 	if (!transport_ok (tr))
 		return -1;
 
 	switch (tr->type) {
-	case TRANSPORT_FIFO:
+	case TRANSPORT_FIFO: return transport_push_fifo (tr, msg);
 	default: err ("bad transport type"); return -1;
 	}
-
 	return 0;
 }
 
