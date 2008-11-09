@@ -26,23 +26,6 @@ int config_line_ok (const char *line)
 	return strchr (line, ':') != NULL;
 }
 
-void for_each_line (FILE *f, void (*func)(const char *, void *), void *arg)
-{
-	char *line;
-
-	rewind (f);
-	while (!feof (f)) {
-		file_read_line (&line, f);
-		if (config_line_ok (line))
-			func (line, arg);
-	}
-}
-
-void count_line (const char *line, void *N)
-{
-	(*((int*)N)) ++;
-}
-
 struct washer_config_list_node *washer_config_list_alloc (
 	struct washer_config_list_node *list)
 {
@@ -87,7 +70,6 @@ struct washer_config_entry *read_configuration (const char *conf_file)
 
 			value_str ++;
 			sscanf (value_str, "%d", &entry->val);
-
 		}
 
 		free (line);
