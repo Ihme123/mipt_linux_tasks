@@ -81,3 +81,50 @@ struct washer_config_list_node *read_configuration (const char *conf_file)
 	return node;
 }
 
+int transport_init (struct transport_descriptor *transport,
+	enum TRANSPORT_TYPES type, enum TRANSPORT_DIRECTIONS dir)
+{
+	if (dir != TRANSPORT_IN && dir != TRANSPORT_OUT)
+		return -1;
+
+	switch (type) {
+	case TRANSPORT_FIFO:
+	default: err ("bad transport type"); return -1;
+	}
+
+	transport->type = type;
+	transport->dir = type;
+	return 0;
+}
+
+struct washer_config_entry *find_config_entry (
+	struct washer_config_list_node *list, const char *type)
+{
+	struct washer_config_list_node *pos;
+
+	for_each_config_entry (pos, list)
+		if (!strcmp (pos->entry.type, type))
+			return &pos->entry;
+	
+	err ("entry not found");
+	return NULL;
+}
+
+int transport_ok (struct transport_descriptor *tr)
+{
+	return tr->dir == TRANSPORT_IN || tr->dir == TRANSPORT_OUT;
+}
+
+int transport_push (struct transport_descriptor *tr, const char *type)
+{
+	if (!transport_ok (tr))
+		return -1;
+
+	switch (tr->type) {
+	case TRANSPORT_FIFO:
+	default: err ("bad transport type"); return -1;
+	}
+
+	return 0;
+}
+
