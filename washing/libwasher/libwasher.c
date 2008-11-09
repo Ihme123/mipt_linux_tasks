@@ -3,6 +3,7 @@
 #include <stdio.h>
 
 #include "../../lib/lib.h"
+#include "libwasher.h"
 
 #define APP_NAME "libwasher"
 
@@ -42,6 +43,17 @@ void count_line (const char *line, void *N)
 	(*((int*)N)) ++;
 }
 
+struct washer_config_list_node *washer_config_list_alloc (
+	struct washer_config_list_node *list)
+{
+	struct washer_config_list_node *node;
+
+	node = malloc (sizeof (struct washer_config_list_node));
+	node->next = list;
+
+	return node;
+}
+
 struct washer_config_entry *read_configuration (const char *conf_file)
 {
 	FILE *f;
@@ -49,7 +61,8 @@ struct washer_config_entry *read_configuration (const char *conf_file)
 	char *line;
 	char *value_str;
 
-	struct washer_config_entry entry;
+	struct washer_config_list_node *node;
+	struct washer_config_entry *entry;
 
 	f = fopen (conf_file, "r");
 	if (f == NULL) {
@@ -57,20 +70,29 @@ struct washer_config_entry *read_configuration (const char *conf_file)
 	}
 
 	N = 0;
+	node = NULL;
 	while (!feof (f)) {
 		file_read_line (&line, f);
+		if (line == NULL)
+			continue;
+
 		if (config_line_ok (line)) {
+			node = washer_config_list_alloc (node); // allocate and attach to the list
+			entry = &node->entry;
+
 			value_str = strchr (line, ':');
 			*value_str = '\0'; // finish type name string
-			entry.type = malloc (strlen (line) + 1);
-			strcpy (entry.type_name, line);
+			entry->type = malloc (strlen (line) + 1);
+			strcpy (entry->type, line);
 
 			value_str ++;
-			sscanf (value_str, "%d", &entry.val);
+			sscanf (value_str, "%d", &entry->val);
 
-			list_add (...);
 		}
+
+		free (line);
 	}
 
 	fclose (f);
 }
+
