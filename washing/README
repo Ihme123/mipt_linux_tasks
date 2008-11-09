@@ -1,0 +1,3 @@
+
+init environment:
+	source variables.conf
