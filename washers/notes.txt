@@ -1,0 +1,21 @@
+valgrind log:
+
+....
+==25220== 68 bytes in 1 blocks are possibly lost in loss record 1 of 1
+==25220==    at 0x1B8FEB78: calloc (vg_replace_malloc.c:279)
+==25220==    by 0x1B8F10C2: _dl_allocate_tls (dl-tls.c:303)
+==25220==    by 0x1B913C51: allocate_stack (in /lib/tls/libpthread-0.10.so)
+==25220==    by 0x1B914C37: pthread_create@@GLIBC_2.1 (in /lib/tls/libpthread-0.10.so)
+==25220==    by 0x8049461: SOCKInitServer (socket.c:61)
+==25220==    by 0x80495E0: SOCKInit (socket.c:103)
+==25220==    by 0x8049CE4: main (washer.c:176)
+==25220== 
+==25220== LEAK SUMMARY:
+==25220==    definitely lost: 0 bytes in 0 blocks.
+==25220==      possibly lost: 68 bytes in 1 blocks.
+==25220==    still reachable: 0 bytes in 0 blocks.
+==25220==         suppressed: 0 bytes in 0 blocks.
+.....
+
+it's the feature of realisation pthread_cerate() in standart ROSIX-THREAD library, not a bug. Prooflink:
+http://sourceware.org/bugzilla/show_bug.cgi?id=4338
