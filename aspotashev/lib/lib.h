@@ -5,8 +5,8 @@
 #include <string.h>
 
 //const size_t MAX_STRING_LEN = 256;
-#define MAX_STRING_LEN 256
-#define MAX_PROGRAM_ARGS 20
+#define MAX_STRING_LEN 256		/**< stantard string length limit */
+#define MAX_PROGRAM_ARGS 20		/**< command arguments number limit */
 
 #define err(format, args...) \
 	fprintf (stderr, APP_NAME " error: " \
