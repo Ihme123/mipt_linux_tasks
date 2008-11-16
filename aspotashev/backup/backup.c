@@ -27,28 +27,6 @@ void concat_path (char *output, const char *path_a, const char *path_b)
 	strcat (output, path_b);
 }
 
-int verbose_open (const char *pathname, int flags)
-{
-	int fd;
-
-	fd = open (pathname, flags);
-	if (fd == -1)
-		err ("can't open file %s", pathname);
-
-	return fd;
-}
-
-int verbose_open_mode (const char *pathname, int flags, mode_t mode)
-{
-	int fd;
-
-	fd = open (pathname, flags, mode);
-	if (fd == -1)
-		err ("can't create file %s", pathname);
-
-	return fd;
-}
-
 int verbose_close (int fd, const char *name)
 {
 	int result;
@@ -98,16 +76,19 @@ int backup_regular_file (const char *source, const char *backup)
 	int result;
 	ssize_t read_result;
 
-	source_fd = verbose_open (source, O_RDONLY);
-	if (source_fd == -1)
+	source_fd = open (source, O_RDONLY);
+	if (source_fd == -1) {
+		err ("can't open source file %s", pathname);
 		return -1;
+	}
 
 //	umask (S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 
-	backup_fd = verbose_open_mode (backup,
+	backup_fd = open (backup,
 		O_WRONLY | O_TRUNC | O_CREAT,
 		S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 	if (backup_fd == -1) {
+		err ("can't create backup file %s", pathname);
 		verbose_close (source_fd, source);
 		return -1;
 	}
