@@ -38,3 +38,5 @@ struct transport_descriptor
 int transport_init (struct transport_descriptor *transport,
 	enum TRANSPORT_TYPES type, enum TRANSPORT_DIRECTIONS dir);
 
+int transport_push (struct transport_descriptor *tr, const char *msg);
+
