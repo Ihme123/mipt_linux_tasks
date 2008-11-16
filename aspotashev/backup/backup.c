@@ -82,8 +82,6 @@ int backup_regular_file (const char *source, const char *backup)
 		return -1;
 	}
 
-//	umask (S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-
 	backup_fd = open (backup,
 		O_WRONLY | O_TRUNC | O_CREAT,
 		S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);

@@ -17,7 +17,6 @@ void parse_args (char *s, char *cmd_args [])
 
 	cmd_arg_c = 0;
 	while (*s) {
-//		printf ("[%s]\n", s);
 		cmd_args [cmd_arg_c] = s;
 		cmd_arg_c ++;
 

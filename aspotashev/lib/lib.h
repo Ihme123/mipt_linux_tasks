@@ -4,7 +4,6 @@
 #include <errno.h>
 #include <string.h>
 
-//const size_t MAX_STRING_LEN = 256;
 #define MAX_STRING_LEN 256
 #define MAX_PROGRAM_ARGS 20
 
