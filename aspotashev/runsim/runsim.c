@@ -10,6 +10,8 @@
 static int running_count;
 static int N;
 
+/** SIGCHLD signal handler
+ */
 void sigchild_handler (int signum)
 {
 	int status;
@@ -20,6 +22,10 @@ void sigchild_handler (int signum)
 	wait (&status); // killing zombies!!!
 }
 
+/** Runs a command if the number of running programs doesn't exceed N
+ *
+ * @param cmd command with arguments
+ */
 int try_run (char *cmd)
 {
 	pid_t pid;
@@ -46,6 +52,8 @@ int try_run (char *cmd)
 	}
 }
 
+/** Prints help on program usage
+ */
 void usage ()
 {
 	err ("Usage: runsim <N>");
@@ -85,7 +93,7 @@ int main (int argc, char *argv [])
 
 		len = strlen (cmd);
 		if (cmd [len - 1] != '\n') {
-			err ("read 'half a string'...exit...");
+			err ("read \'half a string\'...exit...");
 			break;
 		} else {
 			cmd [len - 1] = 0;
