@@ -96,8 +96,12 @@ static int transport_init_fifo (struct transport_descriptor *tr)
 
 	if (tr->dir == TRANSPORT_OUT) {
 		if (mkfifo (filename, S_IWUSR | S_IRUSR) < 0) {
-			err ("can't create fifo");
-			return -1;
+			if (errno == EEXIST)
+				info ("fifo already exists");
+			else {
+				err ("can't create fifo");
+				return -1;
+			}
 		}
 	}
 
