@@ -105,11 +105,13 @@ static int transport_init_fifo (struct transport_descriptor *tr)
 		}
 	}
 
+	info ("opening fifo...");
 	if ((tr->fd = open (filename, tr->dir == TRANSPORT_OUT ?
 		O_WRONLY : O_RDONLY)) < 0) {
 		err ("can't open fifo");
 		return -1;
 	}
+	info ("fifo opened");
 
 	return 0;
 }
