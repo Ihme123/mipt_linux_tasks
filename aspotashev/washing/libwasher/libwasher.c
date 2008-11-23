@@ -145,19 +145,41 @@ struct washer_config_entry *find_config_entry (
 	return NULL;
 }
 
+int msg_ok (const char *msg)
+{
+	size_t len;
+	size_t i;
+
+	len = strlen (msg);
+	for (i = 0; i < len; i ++) {
+		if (isalnum (msg [i]))
+			continue;
+
+		return 0;
+	}
+
+	return 1;
+}
+
 static int transport_push_fifo (struct transport_descriptor *tr,
 	const char *msg)
 {
 	size_t len;
 	ssize_t res;
+	char *buffer;
+	size_t buffer_len;
 
 	len = strlen (msg) + 1;
+	buffer = malloc ((len + 20) * sizeof (char));
+	sprintf (buffer, "SEND %s\n", msg);
 
-	res = write (tr->fd, msg, len);
+	buffer_len = strlen (buffer);
+	res = write (tr->fd, buffer, buffer_len);
+	free (buffer);
 	if (res < 0) {
 		err ("can't write to fifo");
 		return -1;
-	} else if (res != len) {
+	} else if (res != buffer_len) {
 		err ("writing to fifo: partial success");
 		return -1;
 	}
@@ -169,6 +191,11 @@ int transport_push (struct transport_descriptor *tr, const char *msg)
 {
 	if (!transport_ok (tr))
 		return -1;
+
+	if (!msg_ok (msg)) {
+		err ("!msg_ok");
+		return -1;
+	}
 
 	switch (tr->type) {
 	case TRANSPORT_FIFO: return transport_push_fifo (tr, msg);
