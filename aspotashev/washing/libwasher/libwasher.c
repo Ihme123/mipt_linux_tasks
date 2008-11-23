@@ -152,10 +152,12 @@ int msg_ok (const char *msg)
 {
 	size_t len;
 	size_t i;
+	char c;
 
 	len = strlen (msg);
 	for (i = 0; i < len; i ++) {
-		if (isalnum (msg [i]))
+		c = msg [i];
+		if (isalnum (c) || c == ' ')
 			continue;
 
 		return 0;
@@ -164,7 +166,7 @@ int msg_ok (const char *msg)
 	return 1;
 }
 
-static int transport_push_fifo (struct transport_descriptor *tr,
+static int transport_push_fifo (struct one_way_transport *tr,
 	const char *msg)
 {
 	size_t len;
@@ -196,8 +198,11 @@ static int transport_push_fifo (struct transport_descriptor *tr,
 	return 0;
 }
 
-int transport_push (struct transport_descriptor *tr, const char *msg)
+// if tr->type == TRANSPORT_IN, then we're sending an ack
+int transport_plain_push (struct transport_descriptor *tr, const char *msg)
 {
+	struct one_way_transport *cur_tr;
+
 	if (!transport_ok (tr))
 		return -1;
 
@@ -206,17 +211,56 @@ int transport_push (struct transport_descriptor *tr, const char *msg)
 		return -1;
 	}
 
+	cur_tr = &tr->((tr->type == TRANSPORT_OUT) ? fw : ack);
+
 	switch (tr->type) {
-	case TRANSPORT_FIFO: return transport_push_fifo (tr, msg);
+	case TRANSPORT_FIFO: return transport_push_fifo (cur_tr, msg);
 	default: err ("bad transport type"); return -1;
 	}
 	return 0;
 }
 
+// if tr->type == TRANSPORT_OUT, then we're waiting for an ack
+int transport_plain_pull (struct transport_descriptor *tr, char *msg)
+{
+	if (!transport_ok (tr))
+		return -1;
+
+	cur_tr = &tr->((tr->type == TRANSPORT_IN) ? fw : ack);
+
+	switch (tr->type) {
+	case TRANSPORT_FIFO: return transport_pull_fifo (cur_tr, msg);
+	default: err ("bad transport type"); return -1;
+	}
+	return 0;
+}
+
+// sends msg and waits for ack
+int transport_push (struct transport_descriptor *tr, const char *msg)
+{
+	char ack_msg [MAX_MSG_LEN];
+
+	if (transport_plain_push (tr, msg) < 0)
+		return -1;
+	if (transport_plain_pull (tr, ack_msg) < 0)
+		return -1;
+
+	if (strcmp (ack_msg, "OK")) {
+		err ("bad ack: %s", ack_msg);
+		return -1;
+	}
+	return 0;
+}
+
+// pulls msg and sends ack
 int transport_pull (struct transport_descriptor *tr, char *msg)
 {
-	err ("transport_pull: stub");
-	return -1;
+	if (transport_plain_pull (tr, msg) < 0)
+		return -1;
+	if (transport_plain_push (tr, "OK") < 0)
+		return -1;
+	
+	return 0;
 }
 
 int get_table_limit ()

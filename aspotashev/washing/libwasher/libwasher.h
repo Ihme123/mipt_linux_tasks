@@ -29,12 +29,18 @@ enum TRANSPORT_DIRECTIONS {
 	TRANSPORT_IN = 2
 };
 
+struct one_way_transport
+{
+	int fd;
+};
+
 struct transport_descriptor
 {
 	enum TRANSPORT_TYPES type;
 	enum TRANSPORT_DIRECTIONS dir;
 
-	int fd;
+	one_way_transport fw;
+	one_way_transport ack;
 };
 
 int transport_init (struct transport_descriptor *transport,
