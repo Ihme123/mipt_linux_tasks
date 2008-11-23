@@ -31,7 +31,7 @@ int main ()
 	if ((input_list = read_configuration ("washer-input.conf")) == NULL)
 		return 1;
 
-	if ((performance_list = read_configuration ("washer-times.conf")) == NULL)
+	if ((performance_list = read_configuration ("washer.conf")) == NULL)
 		return 1;
 
 	printf ("my configuration:\n");
