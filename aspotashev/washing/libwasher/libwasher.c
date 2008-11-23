@@ -172,9 +172,15 @@ static int transport_push_fifo (struct transport_descriptor *tr,
 	char *buffer;
 	size_t buffer_len;
 
-	len = strlen (msg) + 1;
+	len = strlen (msg);
 	buffer = malloc ((len + 20) * sizeof (char));
-	sprintf (buffer, "SEND %s\n", msg);
+	if (!buffer) {
+		err ("can't alloc buffer");
+		return -1;
+	}
+
+	strcpy (buffer, msg);
+	strcat (buffer, "\n");
 
 	buffer_len = strlen (buffer);
 	res = write (tr->fd, buffer, buffer_len);
