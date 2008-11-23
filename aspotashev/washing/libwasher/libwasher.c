@@ -212,11 +212,18 @@ int transport_pull (struct transport_descriptor *tr, char *msg)
 
 int get_table_limit ()
 {
-	char *env;
+	char *env_ptr;
+	char env [20];
 	char test [20];
 	int res;
 
-	env = getenv ("TABLE_LIMIT");
+	env_ptr = getenv ("TABLE_LIMIT");
+	if (env_ptr == NULL) {
+		err ("TABLE_LIMIT not set");
+		return -1;
+	}
+
+	strncpy (env, env_ptr, 19);
 	res = atoi (env);
 	sprintf (test, "%d", res);
 	if (strcmp (test, env)) {
