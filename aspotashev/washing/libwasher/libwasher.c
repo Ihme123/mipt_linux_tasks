@@ -1,7 +1,10 @@
 
+#define _GNU_SOURCE
 #include <stdlib.h>
 #include <stdio.h>
+#include <ctype.h>
 
+#include <unistd.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 
@@ -17,7 +20,7 @@ static ssize_t file_read_line (char **line, FILE *f)
 	ssize_t res;
 
 	*line = NULL;
-	res = getline (line, &len, f);
+	res = getline (line, &len, f); // FIXME: getline is GNU only
 	if (res == -1) {
 //		err ("can't read line");
 	}
