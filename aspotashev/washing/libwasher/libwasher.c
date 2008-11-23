@@ -141,7 +141,7 @@ struct washer_config_entry *find_config_entry (
 		if (!strcmp (pos->entry.type, type))
 			return &pos->entry;
 	
-	err ("entry not found");
+	err ("entry not found (%s)", type);
 	return NULL;
 }
 
