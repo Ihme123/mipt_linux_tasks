@@ -204,3 +204,30 @@ int transport_push (struct transport_descriptor *tr, const char *msg)
 	return 0;
 }
 
+int transport_pull (struct transport_descriptor *tr, char *msg)
+{
+	err ("transport_pull: stub");
+	return -1;
+}
+
+int get_table_limit ()
+{
+	char *env;
+	char test [20];
+	int res;
+
+	env = getenv ("TABLE_LIMIT");
+	res = atoi (env);
+	sprintf (test, "%d", res);
+	if (strcmp (test, env)) {
+		err ("get_table_limit: bad TABLE_LIMIT format,"
+			"should be a decimal integer number");
+		return -1;
+	} else if (res < 1 || res > 1000) {
+		err ("get_table_limit: table is too small or too big");
+		return -1;
+	} else { // ok
+		return res;
+	}
+}
+
