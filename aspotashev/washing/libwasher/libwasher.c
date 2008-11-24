@@ -94,8 +94,8 @@ static int transport_ok (struct transport_descriptor *tr)
 }
 
 static int transport_init_fifo (struct transport_descriptor *tr)
-{
-	const char filename [] = "transport-fifo";
+{ // TODO: remove this
+/*	const char filename [] = "transport-fifo";
 
 	if (tr->dir == TRANSPORT_OUT) {
 		if (mkfifo (filename, S_IWUSR | S_IRUSR) < 0) {
@@ -115,13 +115,21 @@ static int transport_init_fifo (struct transport_descriptor *tr)
 		return -1;
 	}
 	info ("fifo opened");
+*/
+	return 0;
+}
 
+static int transport_init_fifo_dir (struct one_way_transport *tr, int ack)
+{ // TODO: merge transport_init_fifo to transport_init_fifo_dir
+	err ("stub");
 	return 0;
 }
 
 int transport_init (struct transport_descriptor *tr,
 	enum TRANSPORT_TYPES type, enum TRANSPORT_DIRECTIONS dir)
 {
+	int (* one_way_init)(struct one_way_transport *, int);
+
 	tr->type = type;
 	tr->dir = dir;
 
@@ -129,9 +137,15 @@ int transport_init (struct transport_descriptor *tr,
 		return -1;
 
 	switch (type) {
-	case TRANSPORT_FIFO: return transport_init_fifo (tr);
+	case TRANSPORT_FIFO: one_way_init = transport_init_fifo_dir;
 	default: err ("bad transport type"); return -1;
 	}
+
+	if (one_way_init (&tr->fw, 0) < 0)
+		return -1;
+	if (one_way_init (&tr->ack, 1) < 0)
+		return -1;
+
 	return 0;
 }
 
@@ -211,7 +225,7 @@ int transport_plain_push (struct transport_descriptor *tr, const char *msg)
 		return -1;
 	}
 
-	cur_tr = &tr->((tr->type == TRANSPORT_OUT) ? fw : ack);
+	cur_tr = (tr->type == TRANSPORT_OUT) ? &tr->fw : &tr->ack;
 
 	switch (tr->type) {
 	case TRANSPORT_FIFO: return transport_push_fifo (cur_tr, msg);
@@ -223,10 +237,12 @@ int transport_plain_push (struct transport_descriptor *tr, const char *msg)
 // if tr->type == TRANSPORT_OUT, then we're waiting for an ack
 int transport_plain_pull (struct transport_descriptor *tr, char *msg)
 {
+	struct one_way_transport *cur_tr;
+
 	if (!transport_ok (tr))
 		return -1;
 
-	cur_tr = &tr->((tr->type == TRANSPORT_IN) ? fw : ack);
+	cur_tr = (tr->type == TRANSPORT_IN) ? &tr->fw : &tr->ack;
 
 	switch (tr->type) {
 	case TRANSPORT_FIFO: return transport_pull_fifo (cur_tr, msg);

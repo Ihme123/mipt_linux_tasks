@@ -39,8 +39,8 @@ struct transport_descriptor
 	enum TRANSPORT_TYPES type;
 	enum TRANSPORT_DIRECTIONS dir;
 
-	one_way_transport fw;
-	one_way_transport ack;
+	struct one_way_transport fw;
+	struct one_way_transport ack;
 };
 
 int transport_init (struct transport_descriptor *transport,
