@@ -59,8 +59,10 @@ void *communication_thread (void *ptr)
 	}
 
 	while (1) {
-		transport_pull (&transport, *new_msg);
-
+		if (transport_pull (&transport, *new_msg) < 0) {
+			err ("can't pull");
+			return 0;
+		}
 
 		CALL_CHECKED_P (sem_wait (&full_sem)); // waiting while the table is full
 	
