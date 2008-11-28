@@ -93,42 +93,56 @@ static int transport_ok (struct transport_descriptor *tr)
 	return tr->dir == TRANSPORT_IN || tr->dir == TRANSPORT_OUT;
 }
 
-static int transport_init_fifo (struct transport_descriptor *tr)
-{ // TODO: remove this
-/*	const char filename [] = "transport-fifo";
+static int is_sending_transport (int type, int ack)
+{
+	return (type == TRANSPORT_OUT) ? (ack == 0) : (ack != 0);
+}
 
-	if (tr->dir == TRANSPORT_OUT) {
-		if (mkfifo (filename, S_IWUSR | S_IRUSR) < 0) {
-			if (errno == EEXIST)
-				info ("fifo already exists");
-			else {
-				err ("can't create fifo");
-				return -1;
-			}
+static int transport_init_fifo_common (struct transport_descriptor *tr)
+{
+	if (mkfifo ("tr-fifo-ack", S_IWUSR | S_IRUSR) < 0) {
+		if (errno == EEXIST)
+			info ("fifo already exists");
+		else {
+			err ("can't create fifo");
+			return -1;
 		}
 	}
 
+	if (mkfifo ("tr-fifo", S_IWUSR | S_IRUSR) < 0) {
+		if (errno == EEXIST)
+			info ("fifo already exists");
+		else {
+			err ("can't create fifo");
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
+static int transport_init_fifo_dir (struct one_way_transport *tr, int ack, int type)
+{ // TODO: merge transport_init_fifo to transport_init_fifo_dir
+	const char *filename = ack ? "tr-fifo-ack" : "tr-fifo";
+	int send;
+
+	send = is_sending_transport (type, ack);
+
 	info ("opening fifo...");
-	if ((tr->fd = open (filename, tr->dir == TRANSPORT_OUT ?
-		O_WRONLY : O_RDONLY)) < 0) {
+	if ((tr->fd = open (filename, send ? O_WRONLY : O_RDONLY)) < 0) {
 		err ("can't open fifo");
 		return -1;
 	}
 	info ("fifo opened");
-*/
-	return 0;
-}
 
-static int transport_init_fifo_dir (struct one_way_transport *tr, int ack)
-{ // TODO: merge transport_init_fifo to transport_init_fifo_dir
-	err ("stub");
 	return 0;
 }
 
 int transport_init (struct transport_descriptor *tr,
 	enum TRANSPORT_TYPES type, enum TRANSPORT_DIRECTIONS dir)
 {
-	int (* one_way_init)(struct one_way_transport *, int);
+	int (* one_way_init)(struct one_way_transport *, int, int);
+	int (* common_init)(struct transport_descriptor *);
 
 	tr->type = type;
 	tr->dir = dir;
@@ -137,13 +151,15 @@ int transport_init (struct transport_descriptor *tr,
 		return -1;
 
 	switch (type) {
-	case TRANSPORT_FIFO: one_way_init = transport_init_fifo_dir;
+	case TRANSPORT_FIFO: one_way_init = transport_init_fifo_dir; common_init = transport_init_fifo_common; break;
 	default: err ("bad transport type"); return -1;
 	}
 
-	if (one_way_init (&tr->fw, 0) < 0)
+	if (common_init (tr) < 0)
 		return -1;
-	if (one_way_init (&tr->ack, 1) < 0)
+	if (one_way_init (&tr->fw, 0, type) < 0)
+		return -1;
+	if (one_way_init (&tr->ack, 1, type) < 0)
 		return -1;
 
 	return 0;
@@ -208,6 +224,33 @@ static int transport_push_fifo (struct one_way_transport *tr,
 		err ("writing to fifo: partial success");
 		return -1;
 	}
+
+	return 0;
+}
+
+static int transport_pull_fifo (struct one_way_transport *tr, char *msg)
+{
+	size_t pos;
+	char ch;
+
+	for (pos = 0; ; pos ++) {
+		read (tr->fd, &ch, sizeof (ch));
+		if (ch == '\n')
+			break;
+		else if (ch == '\0') {
+			err ("ack fifo closed unexpectedly");
+			return -1;
+		}
+
+		msg [pos] = ch;
+		info ("symbol read from fifo = [%c]/0x%02x", ch, ch);
+
+		if (pos > MAX_MSG_LEN) {
+			err ("msg is too long (fifo)");
+			return -1;
+		}
+	}
+	msg [pos] = '\0';
 
 	return 0;
 }
