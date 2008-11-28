@@ -82,11 +82,13 @@ int main ()
 		for (i = 0; i < pos->entry.val; i ++) {
 			wash (pos->entry.type, cur_entry_time,
 				i, pos->entry.val);
-			transport_push_send (&transport, pos->entry.type);
+			if (transport_push_send (&transport, pos->entry.type) < 0)
+				return 1;
 		}
 	}
 
-	transport_push_quit (&transport);
+	if (transport_push_quit (&transport) < 0)
+		return 1;
 
 	return 0;
 }

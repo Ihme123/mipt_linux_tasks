@@ -8,8 +8,9 @@
 #define MAX_PROGRAM_ARGS 20		/**< command arguments number limit */
 
 #define err(format, args...) \
-	fprintf (stderr, APP_NAME " error: " \
+	fprintf (stderr, APP_NAME "[%s:%d] error: " \
 		format "%s%s\n", \
+		__FILE__, __LINE__, \
 		## args, \
 		errno ? "\n\terror type: " : "", \
 		errno ? strerror (errno) : "")
