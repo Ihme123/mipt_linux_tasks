@@ -16,9 +16,9 @@ static int transport_ok (struct transport_descriptor *tr)
 	return tr->dir == TRANSPORT_IN || tr->dir == TRANSPORT_OUT;
 }
 
-static int is_sending_transport (int type, int ack)
+static int is_sending_transport (enum TRANSPORT_DIRECTIONS dir, int ack)
 {
-	return (type == TRANSPORT_OUT) ? (ack == 0) : (ack != 0);
+	return (dir == TRANSPORT_OUT) ? (ack == 0) : (ack != 0);
 }
 
 static int transport_init_fifo_common (struct transport_descriptor *tr)
@@ -44,15 +44,16 @@ static int transport_init_fifo_common (struct transport_descriptor *tr)
 	return 0;
 }
 
-static int transport_init_fifo_dir (struct one_way_transport *tr, int ack, int type)
+static int transport_init_fifo_dir (struct one_way_transport *tr, int ack, enum TRANSPORT_DIRECTIONS dir)
 { // TODO: merge transport_init_fifo to transport_init_fifo_dir
 	const char *filename = ack ? "tr-fifo-ack" : "tr-fifo";
 	int send;
 
-	send = is_sending_transport (type, ack);
+	send = is_sending_transport (dir, ack);
 
-	info ("opening fifo...");
-	if ((tr->fd = open (filename, send ? O_WRONLY : O_RDONLY)) < 0) {
+	info ("opening fifo (%s, ack = %d, dir = %d, send = %d)", filename, ack, dir, send);
+	if ((tr->fd = open (filename,
+		send ? O_WRONLY : (O_RDONLY | O_NONBLOCK))) < 0) {
 		err ("can't open fifo");
 		return -1;
 	}
@@ -61,10 +62,22 @@ static int transport_init_fifo_dir (struct one_way_transport *tr, int ack, int t
 	return 0;
 }
 
+static int transport_init_prio_dir (
+	int (* one_way_init)(struct one_way_transport *, int, enum TRANSPORT_DIRECTIONS),
+	struct transport_descriptor *tr,
+	int prio) // current behaviour: reading channel = first
+{
+	if ((prio == 0 && tr->dir == TRANSPORT_IN) || (prio == 1 && tr->dir == TRANSPORT_OUT)) {
+		return one_way_init (&tr->fw, 0, tr->dir);
+	} else {
+		return one_way_init (&tr->ack, 1, tr->dir);
+	}
+}
+
 int transport_init (struct transport_descriptor *tr,
 	enum TRANSPORT_TYPES type, enum TRANSPORT_DIRECTIONS dir)
 {
-	int (* one_way_init)(struct one_way_transport *, int, int);
+	int (* one_way_init)(struct one_way_transport *, int, enum TRANSPORT_DIRECTIONS);
 	int (* common_init)(struct transport_descriptor *);
 
 	tr->type = type;
@@ -80,10 +93,15 @@ int transport_init (struct transport_descriptor *tr,
 
 	if (common_init (tr) < 0)
 		return -1;
-	if (one_way_init (&tr->fw, 0, type) < 0)
+
+	// init reading pipe first (writing pipe gets blocked
+	// when it's not opened by the other application)
+	if (transport_init_prio_dir (one_way_init, tr, 0) < 0)
 		return -1;
-	if (one_way_init (&tr->ack, 1, type) < 0)
+	sleep (1);
+	if (transport_init_prio_dir (one_way_init, tr, 1) < 0)
 		return -1;
+	sleep (1);
 
 	return 0;
 }
@@ -155,9 +173,15 @@ static int transport_pull_fifo (struct one_way_transport *tr, char *msg)
 {
 	size_t pos;
 	char ch;
+	ssize_t read_res;
 
 	for (pos = 0; ; pos ++) {
-		read (tr->fd, &ch, sizeof (ch));
+		read_res = read (tr->fd, &ch, 1);
+		if (read_res != 1) {
+			err ("can't read char from pipe: result: %d", (int)read_res);
+			return -1;
+		}
+
 		if (ch == '\n')
 			break;
 		else if (ch == '\0') {
