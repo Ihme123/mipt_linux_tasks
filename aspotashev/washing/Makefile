@@ -1,4 +1,7 @@
 all:
-	$(MAKE) -C libwasher
-	$(MAKE) -C washer
-	$(MAKE) -C drier
+	@$(MAKE) -C libwasher --no-print-directory
+	@$(MAKE) -C washer --no-print-directory
+	@$(MAKE) -C drier --no-print-directory
+
+clean:
+	rm -f */*.o */*.so libwasher/libwasher washer/washer drier/drier

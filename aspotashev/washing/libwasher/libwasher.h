@@ -1,4 +1,6 @@
 
+#define MAX_MSG_LEN 100
+
 struct washer_config_entry {
 	char *type;
 	int val;
@@ -27,16 +29,25 @@ enum TRANSPORT_DIRECTIONS {
 	TRANSPORT_IN = 2
 };
 
+struct one_way_transport
+{
+	int fd;
+};
+
 struct transport_descriptor
 {
 	enum TRANSPORT_TYPES type;
 	enum TRANSPORT_DIRECTIONS dir;
 
-	int fd;
+	struct one_way_transport fw;
+	struct one_way_transport ack;
 };
 
 int transport_init (struct transport_descriptor *transport,
 	enum TRANSPORT_TYPES type, enum TRANSPORT_DIRECTIONS dir);
 
 int transport_push (struct transport_descriptor *tr, const char *msg);
+int transport_pull (struct transport_descriptor *tr, char *msg);
+
+int get_table_limit ();
 
