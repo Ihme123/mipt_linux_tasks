@@ -93,7 +93,8 @@ int main (int argc, char *argv [])
 
 		len = strlen (cmd);
 		if (cmd [len - 1] != '\n') {
-			err ("read \'half a string\'...exit...");
+			err ("read \'half a string\' (string is "
+				"probably too long)...exit...");
 			break;
 		} else {
 			cmd [len - 1] = 0;
