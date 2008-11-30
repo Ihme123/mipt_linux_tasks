@@ -61,18 +61,20 @@ void *communication_thread (void *ptr)
 	while (1) {
 		if (transport_pull (&transport, *new_msg) < 0) {
 			err ("can't pull");
-			return 0;
+			strcpy (*new_msg, "QUIT");
 		}
 
+		// adding message (pushing to stack)
 		CALL_CHECKED_P (sem_wait (&full_sem)); // waiting while the table is full
-	
+
 		CALL_CHECKED_P (pthread_mutex_lock (&msg_stack_lock));
 		strcpy (msg_stack [msg_stack_N], *new_msg);
 		msg_stack_N ++;
 		CALL_CHECKED_P (pthread_mutex_unlock (&msg_stack_lock));
 
 		CALL_CHECKED_P (sem_post (&empty_sem));
-	
+
+
 		if (!strcmp (*new_msg, "QUIT"))
 			break;
 	}
@@ -118,7 +120,6 @@ int main ()
 	struct washer_config_list_node *pos;
 
 	int cur_entry_time;
-//	int i;
 
 	pthread_t thread;
 	int washer_quit;
@@ -149,17 +150,20 @@ int main ()
 	msg_stack_N = 0;
 	washer_quit = 0;
 	while (1) {
-		if (washer_quit && sem_trywait (&empty_sem) != 0) {
-			if (errno == EAGAIN) {
-				info ("Quitting...");
-				break;
-			} else {
-				err ("sem_trywait failed");
-				return 1;
+		if (washer_quit) {
+			if (sem_trywait (&empty_sem) != 0) {
+				if (errno == EAGAIN) {
+					info ("Quitting...");
+					break;
+				} else {
+					err ("sem_trywait failed");
+					return 1;
+				}
 			}
 		}
-
-		CALL_CHECKED (sem_wait (&empty_sem));
+		else { // if semaphore haven't been locked by sem_trywait
+			CALL_CHECKED (sem_wait (&empty_sem));
+		}
 
 		// get something from the table
 		CALL_CHECKED (pthread_mutex_lock (&msg_stack_lock));
@@ -167,15 +171,19 @@ int main ()
 		msg_stack_N --;
 		CALL_CHECKED (pthread_mutex_unlock (&msg_stack_lock));
 
-		if (!strncmp (*new_msg, "SEND ", 5)) { // dry
+		CALL_CHECKED (sem_post (&full_sem));
+
+		if (!strcmp (*new_msg, "QUIT")) { // quit
+			washer_quit = 1;
+			break;
+		} else if (!strncmp (*new_msg, "SEND ", 5)) { // dry
 			cur_entry_time = find_config_entry (
 				performance_list, *new_msg + 5)->val;
 
 			dry (*new_msg + 5, cur_entry_time);
-		}
-		else if (!strcmp (*new_msg, "QUIT")) { // quit
-			washer_quit = 1;
-			break;
+		} else {
+			err ("bad message");
+			return 1;
 		}
 	}
 
