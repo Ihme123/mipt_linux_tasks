@@ -78,7 +78,7 @@ int backup_regular_file (const char *source, const char *backup)
 
 	source_fd = open (source, O_RDONLY);
 	if (source_fd == -1) {
-		err ("can't open source file %s", pathname);
+		err ("can't open source file %s", source);
 		return -1;
 	}
 
@@ -86,7 +86,7 @@ int backup_regular_file (const char *source, const char *backup)
 		O_WRONLY | O_TRUNC | O_CREAT,
 		S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 	if (backup_fd == -1) {
-		err ("can't create backup file %s", pathname);
+		err ("can't create backup file %s", backup);
 		verbose_close (source_fd, source);
 		return -1;
 	}
