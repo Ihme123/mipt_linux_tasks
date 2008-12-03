@@ -1,6 +1,8 @@
 
 #define MAX_MSG_LEN 100
 
+typedef char char_msg_t[MAX_MSG_LEN];
+
 struct washer_config_entry {
 	char *type;
 	int val;

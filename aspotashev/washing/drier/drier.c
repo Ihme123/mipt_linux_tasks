@@ -25,7 +25,6 @@
 
 int table_limit;
 
-typedef char char_msg_t[MAX_MSG_LEN];
 char_msg_t *msg_stack;
 int msg_stack_N;
 
