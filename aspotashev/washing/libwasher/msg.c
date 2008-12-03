@@ -9,7 +9,7 @@
 #include "../../lib/lib.h"
 #include "libwasher.h"
 
-#define APP_NAME "libwasher/fifo"
+#define APP_NAME "libwasher/msg"
 
 struct washer_msg_buf
 {
