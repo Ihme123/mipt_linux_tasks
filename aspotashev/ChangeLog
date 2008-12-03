@@ -6,4 +6,9 @@
 0.2.2	useless: more handy (info messages, waiting for termination)
 
 0.3	runsim
+0.3.1	updated Makefiles (so tiny tag...?)
+
+0.4	multiple authors, new directories structure
+0.4.1	libwasher improved
+0.4.2	washing works using ipc messages
 
