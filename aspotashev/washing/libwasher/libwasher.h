@@ -35,6 +35,9 @@ enum TRANSPORT_DIRECTIONS {
 struct one_way_transport
 {
 	int fd;
+	key_t key;
+
+	int msgid;
 };
 
 struct transport_descriptor
