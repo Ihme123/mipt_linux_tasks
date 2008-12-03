@@ -113,7 +113,7 @@ int transport_plain_push (struct transport_descriptor *tr, const char *msg)
 		return -1;
 	}
 
-	cur_tr = (tr->type == TRANSPORT_OUT) ? &tr->fw : &tr->ack;
+	cur_tr = (tr->dir == TRANSPORT_OUT) ? &tr->fw : &tr->ack;
 
 	switch (tr->type) {
 	case TRANSPORT_FIFO: return transport_push_fifo (cur_tr, msg);
@@ -131,7 +131,7 @@ int transport_plain_pull (struct transport_descriptor *tr, char *msg)
 	if (!transport_ok (tr))
 		return -1;
 
-	cur_tr = (tr->type == TRANSPORT_IN) ? &tr->fw : &tr->ack;
+	cur_tr = (tr->dir == TRANSPORT_IN) ? &tr->fw : &tr->ack;
 
 	switch (tr->type) {
 	case TRANSPORT_FIFO: return transport_pull_fifo (cur_tr, msg);
