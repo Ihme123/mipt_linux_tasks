@@ -91,7 +91,8 @@ int buffers_init ()
 
 int buffers_destroy ()
 {
-	err ("stub");
+	free (msg_stack);
+	msg_stack = NULL;
 
 	return 0;
 }
@@ -108,7 +109,10 @@ int sync_init ()
 
 int sync_destroy ()
 {
-	err ("stub");
+	CALL_CHECKED (sem_destroy (&full_sem));
+	CALL_CHECKED (sem_destroy (&empty_sem));
+
+	CALL_CHECKED (pthread_mutex_destroy (&msg_stack_lock));
 
 	return 0;
 }
