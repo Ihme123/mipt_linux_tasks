@@ -51,3 +51,5 @@ int transport_pull (struct transport_descriptor *tr, char *msg);
 
 int get_table_limit ();
 
+int is_sending_transport (enum TRANSPORT_DIRECTIONS dir, int ack);
+
