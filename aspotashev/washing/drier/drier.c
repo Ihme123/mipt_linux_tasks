@@ -53,7 +53,7 @@ void *communication_thread (void *ptr)
 
 	CALL_CHECKED_P ((new_msg = malloc (sizeof (char_msg_t))) == NULL);
 
-	if (transport_init (&transport, TRANSPORT_FIFO, TRANSPORT_IN) < 0) {
+	if (transport_init (&transport, get_tr_type (), TRANSPORT_IN) < 0) {
 		free (new_msg);
 		return 0;
 	}

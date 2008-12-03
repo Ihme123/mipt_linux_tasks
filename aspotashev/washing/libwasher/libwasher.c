@@ -165,3 +165,20 @@ int transport_pull (struct transport_descriptor *tr, char *msg)
 	return 0;
 }
 
+enum TRANSPORT_TYPES tr_name_to_code (const char *name)
+{
+	if (!strcmp (name, "fifo"))
+		return TRANSPORT_FIFO;
+	else if (!strcmp (name, "msg"))
+		return TRANSPORT_MSG;
+	else {
+		err ("bad transport type name");
+		return -1;
+	}
+}
+
+enum TRANSPORT_TYPES get_tr_type ()
+{
+	return tr_name_to_code ("msg");
+}
+

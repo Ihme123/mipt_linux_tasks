@@ -21,12 +21,13 @@ struct washer_config_entry *find_config_entry (
 	for (pos = head; (pos) != NULL; pos = pos->next)
 
 enum TRANSPORT_TYPES {
-	TRANSPORT_FIFO = 1
+	TRANSPORT_FIFO = 1,
+	TRANSPORT_MSG  = 2,
 };
 
 enum TRANSPORT_DIRECTIONS {
 	TRANSPORT_OUT = 1,
-	TRANSPORT_IN = 2
+	TRANSPORT_IN  = 2,
 };
 
 struct one_way_transport
@@ -52,4 +53,6 @@ int transport_pull (struct transport_descriptor *tr, char *msg);
 int get_table_limit ();
 
 int is_sending_transport (enum TRANSPORT_DIRECTIONS dir, int ack);
+
+enum TRANSPORT_TYPES get_tr_type ();
 
