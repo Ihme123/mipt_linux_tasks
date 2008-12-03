@@ -60,16 +60,19 @@ int transport_push_msg (struct one_way_transport *tr, const char *msg)
 
 int transport_pull_msg (struct one_way_transport *tr, char *msg)
 {
+	struct washer_msg_buf buf;
 	ssize_t res;
 
-	if ((res = msgrcv (tr->msgid, msg, MAX_MSG_LEN, 0, 0)) == -1) {
+	if ((res = msgrcv (tr->msgid, &buf, MAX_MSG_LEN, 0, 0)) == -1) {
 		err ("msgrcv failed");
 		return -1;
 	}
-	if (msg [res - 1] != '\0') {
+	if (buf.msg [res - 1] != '\0') {
 		err ("end of msg is not 0");
 		return -1;
 	}
+
+	strcpy (msg, buf.msg);
 
 	return 0;
 }
