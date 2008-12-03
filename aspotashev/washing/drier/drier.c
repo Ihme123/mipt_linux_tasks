@@ -25,7 +25,6 @@
 
 int table_limit;
 
-typedef char char_msg_t[MAX_MSG_LEN];
 char_msg_t *msg_stack;
 int msg_stack_N;
 
@@ -53,7 +52,7 @@ void *communication_thread (void *ptr)
 
 	CALL_CHECKED_P ((new_msg = malloc (sizeof (char_msg_t))) == NULL);
 
-	if (transport_init (&transport, TRANSPORT_FIFO, TRANSPORT_IN) < 0) {
+	if (transport_init (&transport, get_tr_type (), TRANSPORT_IN) < 0) {
 		free (new_msg);
 		return 0;
 	}
@@ -92,7 +91,8 @@ int buffers_init ()
 
 int buffers_destroy ()
 {
-	err ("stub");
+	free (msg_stack);
+	msg_stack = NULL;
 
 	return 0;
 }
@@ -109,7 +109,10 @@ int sync_init ()
 
 int sync_destroy ()
 {
-	err ("stub");
+	CALL_CHECKED (sem_destroy (&full_sem));
+	CALL_CHECKED (sem_destroy (&empty_sem));
+
+	CALL_CHECKED (pthread_mutex_destroy (&msg_stack_lock));
 
 	return 0;
 }

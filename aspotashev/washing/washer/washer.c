@@ -70,7 +70,7 @@ int main ()
 			pos->entry.type, pos->entry.val);
 	}
 
-	if (transport_init (&transport, TRANSPORT_FIFO, TRANSPORT_OUT) < 0)
+	if (transport_init (&transport, get_tr_type (), TRANSPORT_OUT) < 0)
 		return 1;
 
 	for_each_config_entry (pos, input_list) {
