@@ -1,5 +1,5 @@
-libwasher.so: libwasher.o config.o fifo.o
-	$(CC) -g -shared -o libwasher.so libwasher.o config.o fifo.o
+libwasher.so: libwasher.o config.o fifo.o msg.o
+	$(CC) -g -shared -o libwasher.so libwasher.o config.o fifo.o msg.o
 config.o: config.c
 	$(CC) -Wall -g -c -fPIC -o config.o config.c
 fifo.o: fifo.c

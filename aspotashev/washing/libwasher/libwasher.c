@@ -8,6 +8,7 @@
 #include "../../lib/lib.h"
 #include "libwasher.h"
 #include "fifo.h"
+#include "msg.h"
 
 #define APP_NAME "libwasher"
 
@@ -48,6 +49,7 @@ int transport_init (struct transport_descriptor *tr,
 
 	switch (type) {
 	case TRANSPORT_FIFO: one_way_init = transport_init_fifo_dir; common_init = transport_init_fifo_common; break;
+	case TRANSPORT_MSG:  one_way_init = transport_init_msg_dir;  common_init = transport_init_ipc_common;  break;
 	default: err ("bad transport type"); return -1;
 	}
 
@@ -115,6 +117,7 @@ int transport_plain_push (struct transport_descriptor *tr, const char *msg)
 
 	switch (tr->type) {
 	case TRANSPORT_FIFO: return transport_push_fifo (cur_tr, msg);
+	case TRANSPORT_MSG:  return transport_push_msg  (cur_tr, msg);
 	default: err ("bad transport type"); return -1;
 	}
 	return 0;
@@ -132,6 +135,7 @@ int transport_plain_pull (struct transport_descriptor *tr, char *msg)
 
 	switch (tr->type) {
 	case TRANSPORT_FIFO: return transport_pull_fifo (cur_tr, msg);
+	case TRANSPORT_MSG:  return transport_pull_msg  (cur_tr, msg);
 	default: err ("bad transport type"); return -1;
 	}
 	return 0;

@@ -3,6 +3,8 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <sys/ipc.h>
+#include <sys/msg.h>
 
 #include "../../lib/lib.h"
 #include "libwasher.h"
@@ -17,7 +19,7 @@ struct washer_msg_buf
 
 int transport_init_ipc_common (struct transport_descriptor *tr)
 {
-	if (creat ("tr-ipc", S_IRUSR) < 0) {
+	if (creat ("tr-ipc", S_IRUSR | S_IWUSR) < 0) {
 		err ("can't create file for ipc");
 		return -1;
 	}
@@ -25,7 +27,8 @@ int transport_init_ipc_common (struct transport_descriptor *tr)
 	return 0;
 }
 
-int transport_init_msg_dir (struct one_way_transport *tr, int ack, enum TRANSPORT_DIRECTIONS dir)
+int transport_init_msg_dir (struct one_way_transport *tr, int ack,
+	enum TRANSPORT_DIRECTIONS dir)
 {
 	if ((tr->key = ftok ("tr-ipc", ack ? 2 : 1)) < 0) {
 		err ("can't get ipc key");
@@ -39,15 +42,14 @@ int transport_init_msg_dir (struct one_way_transport *tr, int ack, enum TRANSPOR
 	return 0;
 }
 
-int transport_push_msg (struct one_way_transport *tr,
-	const char *msg)
+int transport_push_msg (struct one_way_transport *tr, const char *msg)
 {
 	struct washer_msg_buf buf;
 
 	buf.type = 1;
 	strcpy (buf.msg, msg);
 
-	if (msgsnd (tr->msgid, (struct msgbuf *)&buf, strlen (buf.len) + 1,
+	if (msgsnd (tr->msgid, (struct msgbuf *)&buf, strlen (buf.msg) + 1,
 		IPC_NOWAIT) < 0) {
 		err ("msgsnd failed");
 		return -1;
