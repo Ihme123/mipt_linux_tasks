@@ -200,7 +200,16 @@ int main(int argc, char **argv, char **env)
 
 	struct connDesc *d;
 	d = calloc(1, sizeof(struct connDesc));
-	cInit(d, n, true, argv[1]);
+	if (cInit(d, n, true, argv[1])==0)
+	{
+		printf("Error initialising connection. Terminating...\n");
+		arrFree(TDry);
+		free(d);
+		free(StrWorkConf);
+		free(StrWashConf);
+		free(StrDryConf);
+		return -1;
+	}
 	int a,p;
 	while((a = cRead(d))!=-1)
 	{
