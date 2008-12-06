@@ -1,10 +1,16 @@
 .*
 *.o
 *.so
+!.gitignore
+
 useless/useless
+
 backup/backup
 backup/test
+backup/t/sandbox
+
 runsim/runsim
+
 washing/washer/washer
 washing/drier/drier
 washing/tr-ipc
