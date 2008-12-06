@@ -152,7 +152,7 @@ int backup_object (const char *source, const char *backup)
 	char gzip_backup [MAX_STRING_LEN];
 	int result;
 
-	result = stat (source, &source_stat);
+	result = lstat (source, &source_stat);
 	if (result != 0) {
 		err ("source stat failed");
 		return -1;
@@ -162,7 +162,7 @@ int backup_object (const char *source, const char *backup)
 	if ((source_stat.st_mode & S_IFMT) == S_IFREG)
 		strcat (gzip_backup, ".gz");
 
-	result = stat (gzip_backup, &backup_stat);
+	result = lstat (gzip_backup, &backup_stat);
 	if (result == -1 && errno == ENOENT) {
 		info ("creating new backup for %s", source);
 	} else if (result == 0) {
