@@ -163,20 +163,23 @@ int backup_object (const char *source, const char *backup)
 		strcat (gzip_backup, ".gz");
 
 	result = lstat (gzip_backup, &backup_stat);
+	/* Checking mtime */
 	if (result == -1 && errno == ENOENT) {
 		info ("creating new backup for %s", source);
 	} else if (result == 0) {
 		info ("updating backup for %s", source);
 
-		// if backup already exists and file types don't match
+		/* if backup already exists and file types don't match */
 		if (source_stat.st_mode != backup_stat.st_mode) {
 			err ("types of source and backup differ (source: %s, backup: %s)",
 				source, gzip_backup);
 			return -1;
 		}
 
-		if ((source_stat.st_mode & S_IFMT) == S_IFREG && backup_stat.st_mtime >= source_stat.st_mtime) {
-			info ("backup file %s is already up-to-date", gzip_backup);
+		if ((source_stat.st_mode & S_IFMT) == S_IFREG &&
+			backup_stat.st_mtime >= source_stat.st_mtime) {
+			info ("backup file %s is already up-to-date",
+				backup_pack);
 			return 0;
 		}
 	} else {
@@ -199,7 +202,8 @@ int backup_object (const char *source, const char *backup)
 	else if ((source_stat.st_mode & S_IFMT) == S_IFSOCK)
 		info ("%s is a socket", source);
 	else {
-		err ("unknown file type (0x%08x): %s", source_stat.st_mode, source);
+		err ("unknown file type (0x%08x): %s",
+			source_stat.st_mode, source);
 		return -1;
 	}
 
