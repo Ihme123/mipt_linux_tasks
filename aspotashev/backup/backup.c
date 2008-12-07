@@ -145,11 +145,48 @@ int backup_directory (const char *source, const char *backup)
 	return backup_dir_contents (source, backup);
 }
 
+int backup_symlink (const char *source, const char *backup)
+{
+	char symlink_value [MAX_STRING_LEN];
+	ssize_t write_res;
+	int len;
+	int fd;
+	int res;
+
+	res = 0;
+
+	if ((len = readlink (source, symlink_value, MAX_STRING_LEN)) < 0) {
+		err ("readlink failed");
+		return -1;
+	}
+
+	if ((fd = open (backup, O_WRONLY | O_TRUNC | O_CREAT,
+		S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) < 0) {
+		err ("can't create backup file for symlink");
+		return -1;
+	}
+	write_res = write (fd, symlink_value, len);
+	if (write_res < 0) {
+		err ("write failed");
+		res = -1;
+	} else if (write_res != len) {
+		err ("can't write the whole symlink value");
+		res = -1;
+	}
+
+	if (close (fd) < 0) {
+		err ("close failed");
+		return -1;
+	}
+
+	return res;
+}
+
 int backup_object (const char *source, const char *backup)
 {
 	struct stat source_stat;
 	struct stat backup_stat;
-	char gzip_backup [MAX_STRING_LEN];
+	char backup_pack [MAX_STRING_LEN];
 	int result;
 
 	result = lstat (source, &source_stat);
@@ -158,12 +195,12 @@ int backup_object (const char *source, const char *backup)
 		return -1;
 	}
 
-	strcpy (gzip_backup, backup);
+	strcpy (backup_pack, backup);
 	if ((source_stat.st_mode & S_IFMT) == S_IFREG)
-		strcat (gzip_backup, ".gz");
+		strcat (backup_pack, ".gz");
 
-	result = lstat (gzip_backup, &backup_stat);
 	/* Checking mtime */
+	result = lstat (backup_pack, &backup_stat);
 	if (result == -1 && errno == ENOENT) {
 		info ("creating new backup for %s", source);
 	} else if (result == 0) {
@@ -172,7 +209,7 @@ int backup_object (const char *source, const char *backup)
 		/* if backup already exists and file types don't match */
 		if (source_stat.st_mode != backup_stat.st_mode) {
 			err ("types of source and backup differ (source: %s, backup: %s)",
-				source, gzip_backup);
+				source, backup_pack);
 			return -1;
 		}
 
@@ -191,8 +228,10 @@ int backup_object (const char *source, const char *backup)
 		return backup_regular_file (source, backup);
 	else if ((source_stat.st_mode & S_IFMT) == S_IFDIR)
 		return backup_directory (source, backup);
-	else if ((source_stat.st_mode & S_IFMT) == S_IFLNK)
-		info ("symbolic link backups are not implemented (%s)", source);
+	else if ((source_stat.st_mode & S_IFMT) == S_IFLNK) {
+		strcat (backup_pack, ".symlink");
+		return backup_symlink (source, backup_pack);
+	}
 	else if ((source_stat.st_mode & S_IFMT) == S_IFBLK)
 		info ("%s is a block device", source);
 	else if ((source_stat.st_mode & S_IFMT) == S_IFCHR)

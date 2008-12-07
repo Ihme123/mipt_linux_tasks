@@ -11,7 +11,7 @@ link temp/file.txt temp/hardlink
 
 mkdir -p temp.backup
 
-cd ..
+cd ../..
 make
 cd -
 
