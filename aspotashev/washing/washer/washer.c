@@ -14,6 +14,8 @@ void wash (const char *type, int entry_time, int index, int eq_count)
 
 	printf ("washing \"%s\" (%d/%d): ", type, index + 1, eq_count);
 	for (i = 0; i < entry_time; i ++) {
+		usleep (300000);
+
 		printf (".");
 		fflush (stdout);
 	}

@@ -38,6 +38,8 @@ void dry (const char *type, int entry_time)
 
 	printf ("drying \"%s\" (it takes %d ticks): ", type, entry_time);
 	for (i = 0; i < entry_time; i ++) {
+		usleep (300000);
+
 		printf (".");
 		fflush (stdout);
 	}
