@@ -42,7 +42,7 @@ int transport_init_fifo_dir (struct one_way_transport *tr, int ack, enum TRANSPO
 
 	info ("opening fifo (%s, ack = %d, dir = %d, send = %d)", filename, ack, dir, send);
 	if ((tr->fd = open (filename,
-		send ? O_WRONLY : (O_RDONLY | O_NONBLOCK))) < 0) {
+		send ? O_WRONLY : (O_RDONLY))) < 0) {
 		err ("can't open fifo");
 		return -1;
 	}

@@ -23,12 +23,23 @@ int is_sending_transport (enum TRANSPORT_DIRECTIONS dir, int ack)
 	return (dir == TRANSPORT_OUT) ? (ack == 0) : (ack != 0);
 }
 
+static int sort_first_reading_channel (enum TRANSPORT_DIRECTIONS dir, int prio)
+{ // transport_init_prio_dir behaviour: reading channel = first
+	return (prio == 0 && dir == TRANSPORT_IN) ||
+		(prio == 1 && dir == TRANSPORT_OUT);
+}
+
+static int sort_first_fw_channel (enum TRANSPORT_DIRECTIONS dir, int prio)
+{
+	return !prio;
+}
+
 static int transport_init_prio_dir (
 	int (* one_way_init)(struct one_way_transport *, int, enum TRANSPORT_DIRECTIONS),
 	struct transport_descriptor *tr,
-	int prio) // current behaviour: reading channel = first
+	int prio)
 {
-	if ((prio == 0 && tr->dir == TRANSPORT_IN) || (prio == 1 && tr->dir == TRANSPORT_OUT)) {
+	if (sort_first_fw_channel (tr->dir, prio)) {
 		return one_way_init (&tr->fw, 0, tr->dir);
 	} else {
 		return one_way_init (&tr->ack, 1, tr->dir);
@@ -60,10 +71,8 @@ int transport_init (struct transport_descriptor *tr,
 	// when it's not opened by the other application)
 	if (transport_init_prio_dir (one_way_init, tr, 0) < 0)
 		return -1;
-	sleep (1);
 	if (transport_init_prio_dir (one_way_init, tr, 1) < 0)
 		return -1;
-	sleep (1);
 
 	return 0;
 }
@@ -183,6 +192,6 @@ enum TRANSPORT_TYPES tr_name_to_code (const char *name)
 
 enum TRANSPORT_TYPES get_tr_type ()
 {
-	return tr_name_to_code ("msg");
+	return tr_name_to_code ("fifo");
 }
 
