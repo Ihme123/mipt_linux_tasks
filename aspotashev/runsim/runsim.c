@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include <sys/wait.h>
+#include <string.h>
 
 #include "../lib/lib.h"
 
@@ -9,10 +10,12 @@
 
 struct process_info {
 	pid_t pid;
+
+	struct process_info *next;
 };
 
 #define list_for_each(pos, head) \
-	for (pos = process_info; pos; pos = pos->next)
+	for (pos = head; pos; pos = pos->next)
 
 struct process_info *process_list;
 
@@ -36,19 +39,16 @@ int run_internal_command (const char *cmd)
 {
 	struct process_info *pos;
 
-	if (!strcmpi (cmd, "q")) {
+	if (!strcasecmp (cmd, "q")) {
 		list_for_each (pos, process_list)
 			kill (pos->pid, SIGKILL);
 
 		runsim_quit = 1;
+		return 0;
+	} else {
+		err ("unknown command");
+		return -1;
 	}
-}
-
-int try_run (char *cmd)
-{
-	if (cmd && cmd [0] == '/' && cmd [0] != '\0' && cmd [1] == ' ')
-		return run_internal_command (cmd + 2);
-	else return try_exec (cmd);
 }
 
 /** Executes a program if the number of running programs doesn't exceed N
@@ -79,6 +79,13 @@ int try_exec (char *cmd_line)
 		running_count ++;
 		return 0;
 	}
+}
+
+int try_run (char *cmd)
+{
+	if (cmd && cmd [0] == '/' && cmd [0] != '\0' && cmd [1] == ' ')
+		return run_internal_command (cmd + 2);
+	else return try_exec (cmd);
 }
 
 /** Prints help on program usage
