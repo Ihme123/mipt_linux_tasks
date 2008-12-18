@@ -7,8 +7,18 @@
 
 #define APP_NAME "runsim"
 
+struct process_info {
+	pid_t pid;
+};
+
+#define list_for_each(pos, head) \
+	for (pos = process_info; pos; pos = pos->next)
+
+struct process_info *process_list;
+
 static int running_count;
 static int N;
+static int runsim_quit;
 
 /** SIGCHLD signal handler
  */
@@ -22,11 +32,30 @@ void sigchild_handler (int signum)
 	wait (&status); // killing zombies!!!
 }
 
-/** Runs a command if the number of running programs doesn't exceed N
- *
- * @param cmd command with arguments
- */
+int run_internal_command (const char *cmd)
+{
+	struct process_info *pos;
+
+	if (!strcmpi (cmd, "q")) {
+		list_for_each (pos, process_list)
+			kill (pos->pid, SIGKILL);
+
+		runsim_quit = 1;
+	}
+}
+
 int try_run (char *cmd)
+{
+	if (cmd && cmd [0] == '/' && cmd [0] != '\0' && cmd [1] == ' ')
+		return run_internal_command (cmd + 2);
+	else return try_exec (cmd);
+}
+
+/** Executes a program if the number of running programs doesn't exceed N
+ *
+ * @param cmd_line program with arguments
+ */
+int try_exec (char *cmd_line)
 {
 	pid_t pid;
 	char *cmd_args [MAX_PROGRAM_ARGS];
@@ -36,7 +65,7 @@ int try_run (char *cmd)
 		return -1;
 	}
 
-	parse_args (cmd, cmd_args);
+	parse_args (cmd_line, cmd_args);
 
 	pid = fork ();
 	if (pid < 0) {
@@ -86,7 +115,9 @@ int main (int argc, char *argv [])
 	}
 
 	running_count = 0;
-	while (1) {
+	process_list = NULL;
+	runsim_quit = 0;
+	while (!runsim_quit) {
 		if (fgets (cmd, MAX_STRING_LEN, stdin) == NULL) {
 			break;
 		}
