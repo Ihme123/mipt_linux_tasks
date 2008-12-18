@@ -11,6 +11,10 @@
 struct process_info {
 	pid_t pid;
 
+	int stdin_fd;
+	int stdout_fd;
+	int stderr_fd;
+
 	struct process_info *next;
 };
 
@@ -51,6 +55,28 @@ int run_internal_command (const char *cmd)
 	}
 }
 
+/** Allocates an instance of 'struct process_info' and links it to the list
+ */
+struct process_info *add_process ()
+{
+	struct process_info *info;
+
+	if ((info = malloc (sizeof (struct process_info))) == NULL) {
+		err ("can't allocate struct process_info");
+		return NULL;
+	}
+
+	info->next = process_list;
+	process_list = info;
+	return info;
+}
+
+void close_pipe (int fd [2])
+{
+	close (fd [0]);
+	close (fd [1]);
+}
+
 /** Executes a program if the number of running programs doesn't exceed N
  *
  * @param cmd_line program with arguments
@@ -59,6 +85,10 @@ int try_exec (char *cmd_line)
 {
 	pid_t pid;
 	char *cmd_args [MAX_PROGRAM_ARGS];
+	int stdin_pipe [2];
+	int stdout_pipe [2];
+	int stderr_pipe [2];
+	struct process_info *info;
 
 	if (running_count >= N) {
 		info ("%d programs are already running", N);
@@ -67,15 +97,50 @@ int try_exec (char *cmd_line)
 
 	parse_args (cmd_line, cmd_args);
 
+	if (pipe (stdin_pipe) < 0 || pipe (stdout_pipe) < 0 ||
+		pipe (stderr_pipe) < 0) {
+		err ("can't create pipes");
+		return -1;
+	}
+
 	pid = fork ();
 	if (pid < 0) {
-		err ();
+		close (stdin_pipe [0]);
+		close (stdin_pipe [1]);
+		close (stdout_pipe [0]);
+		close (stdout_pipe [1]);
+		close (stderr_pipe [0]);
+		close (stderr_pipe [1]);
+
+		err ("fork failed");
 		return -1;
 	} else if (pid == 0) { // child
+		if (dup2 (stdin_pipe [0], 0) < 0 ||
+			dup2 (stdout_pipe [1], 1) < 0 ||
+			dup2 (stderr_pipe [1], 2) < 0) {
+			err ("dup2 failed");
+			exit (1);
+		}
+
+		close_pipe (stdin_pipe);
+		close_pipe (stdout_pipe);
+		close_pipe (stderr_pipe);
+
 		execvp (cmd_args [0], cmd_args);
+
 		err ("exec failed");
 		exit (1);
 	} else { // parent
+		close (stdin_pipe [0]);
+		close (stdout_pipe [1]);
+		close (stderr_pipe [1]);
+
+		info = add_process ();
+		info->stdin_fd = stdin_pipe [1];
+		info->stdout_fd = stdout_pipe [0];
+		info->stderr_fd = stderr_pipe [0];
+		info->pid = pid;
+
 		running_count ++;
 		return 0;
 	}
