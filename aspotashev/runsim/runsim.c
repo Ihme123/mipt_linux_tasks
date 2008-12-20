@@ -200,7 +200,8 @@ int try_exec (char *cmd_line)
 
 		running_count ++;
 
-		info ("started program '%s', id = %d", cmd_line, info->id);
+		info ("started program '%s', id = %d, pid = %d",
+			cmd_line, info->id, info->pid);
 		return 0;
 	}
 }
