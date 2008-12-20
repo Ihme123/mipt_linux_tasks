@@ -1,0 +1,13 @@
+$ ./runsim 5
+./runsim 2
+runsim info: started program './runsim', id = 1
+/ w1 sleep 100
+sleep 20
+runsim info: started program 'sleep', id = 2
+sleep 20
+runsim info: started program 'sleep', id = 3
+sleep 5
+runsim info: started program 'sleep', id = 4
+/ w1 sleep 2
+/ w1 / q
+/ q
