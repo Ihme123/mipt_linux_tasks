@@ -3,6 +3,7 @@
 #include <signal.h>
 #include <sys/wait.h>
 #include <string.h>
+#include <ctype.h>
 
 #include "../lib/lib.h"
 
@@ -15,6 +16,8 @@ struct process_info {
 	int stdout_fd;
 	int stderr_fd;
 
+	int id;
+
 	struct process_info *next;
 };
 
@@ -26,6 +29,7 @@ struct process_info *process_list;
 static int running_count;
 static int N;
 static int runsim_quit;
+static int last_proc_id;
 
 /** SIGCHLD signal handler
  */
@@ -39,20 +43,72 @@ void sigchild_handler (int signum)
 	wait (&status); // killing zombies!!!
 }
 
+struct process_info *find_by_id (struct process_info *head, int id)
+{
+	struct process_info *pos;
+
+	list_for_each (pos, head)
+		if (pos->id == id)
+			break;
+
+	return pos;
+}
+
 int run_internal_command (const char *cmd)
 {
 	struct process_info *pos;
+	struct process_info *proc;
+	int id;
+	int msg_index;
+	ssize_t len;
+	char *buffer;
 
 	if (!strcasecmp (cmd, "q")) {
 		list_for_each (pos, process_list)
 			kill (pos->pid, SIGKILL);
 
 		runsim_quit = 1;
-		return 0;
+	} else if (cmd [0] == 'w') {
+		if (sscanf (cmd + 1, "%d", &id) != 1) {
+			err ("wrong input format (id required)");
+			return -1;
+		}
+
+		msg_index = 1;
+		while (isdigit (cmd [msg_index]))
+			msg_index ++;
+		if (cmd [msg_index] != ' ') {
+			err ("wrong input format (after id, msg_index = %d)",
+				msg_index);
+			return -1;
+		}
+
+		msg_index ++;
+		proc = find_by_id (process_list, id);
+		if (!proc) {
+			err ("no process with id = %d", id);
+			return -1;
+		}
+
+		len = strlen (cmd + msg_index);
+		buffer = malloc ((len + 2) * sizeof (char));
+		strcpy (buffer, cmd + msg_index);
+
+		strcat (buffer, "\n");
+		len ++;
+
+		if (write (proc->stdin_fd, buffer, len) != len) {
+			err ("write failed");
+			return -1;
+		}
+
+		free (buffer);
 	} else {
 		err ("unknown command");
 		return -1;
 	}
+
+	return 0;
 }
 
 /** Allocates an instance of 'struct process_info' and links it to the list
@@ -140,8 +196,11 @@ int try_exec (char *cmd_line)
 		info->stdout_fd = stdout_pipe [0];
 		info->stderr_fd = stderr_pipe [0];
 		info->pid = pid;
+		info->id = last_proc_id ++;
 
 		running_count ++;
+
+		info ("started program '%s', id = %d", cmd_line, info->id);
 		return 0;
 	}
 }
@@ -188,6 +247,7 @@ int main (int argc, char *argv [])
 
 	running_count = 0;
 	process_list = NULL;
+	last_proc_id = 1;
 	runsim_quit = 0;
 	while (!runsim_quit) {
 		if (fgets (cmd, MAX_STRING_LEN, stdin) == NULL) {
