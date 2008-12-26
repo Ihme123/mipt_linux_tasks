@@ -36,11 +36,23 @@ static int last_proc_id;
 void sigchild_handler (int signum)
 {
 	int status;
+	int pid;
 
 	// no synchronization needed,
 	// there's no concurrent threads (am I wrong?)
-	running_count --;
-	wait (&status); // killing zombies!!!
+	while (1) {
+		pid = waitpid (-1, &status, WNOHANG);
+		if (pid > 0) { // killing zombies!!!
+			running_count --;
+			printf ("A child process really terminated! (PID = %d, status = %d)\n", pid, status);
+		} else if (pid == 0 || (pid < 0 && errno == ECHILD)) {
+			printf ("Somebody is joking with SIGCHLD...\n");
+			break;
+		} else {
+			printf ("waitpid failed\n");
+			break;
+		}
+	}
 }
 
 struct process_info *find_by_id (struct process_info *head, int id)
