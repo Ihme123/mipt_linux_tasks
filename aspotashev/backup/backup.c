@@ -17,6 +17,8 @@ const size_t COPY_BUFFER_SZ = 512;
 
 #define APP_NAME "backup"
 
+#define list_for_each(pos, head) \
+	for (pos = head; pos; pos = pos->next)
 
 int backup_dir_contents (const char *source, const char *backup);
 
@@ -182,12 +184,70 @@ int backup_symlink (const char *source, const char *backup)
 	return res;
 }
 
+int backup_hardlink (const char *source, const char *backup)
+{
+	int fd;
+	ssize_t len;
+
+	len = strlen (source);
+	if ((fd = open (backup, O_WRONLY | O_TRUNC | O_CREAT,
+		S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) < 0) {
+		err ("can't create backup file for hardlink");
+		return -1;
+	}
+	if (write (fd, source, len) != len) {
+		err ("write failed");
+		close (fd);
+		return -1;
+	}
+
+	close (fd);
+	return 0;
+}
+
+struct file_info {
+	dev_t st_dev;
+	ino_t st_ino;
+	char *filename;
+
+	struct file_info *next;
+};
+
+struct file_info *file_list;
+
+struct file_info *find_by_inode (struct file_info *head,
+	dev_t st_dev, ino_t st_ino)
+{
+	struct file_info *pos;
+
+	list_for_each (pos, head)
+		if (pos->st_dev == st_dev && pos->st_ino == st_ino)
+			break;
+
+	return pos;
+}
+
+struct file_info *list_add ()
+{
+	struct file_info *info;
+
+	if ((info = malloc (sizeof (struct file_info))) == NULL) {
+		err ("malloc failed");
+		return NULL;
+	}
+
+	info->next = file_list;
+	file_list = info;
+	return info;
+}
+
 int backup_object (const char *source, const char *backup)
 {
 	struct stat source_stat;
 	struct stat backup_stat;
 	char backup_pack [MAX_STRING_LEN];
 	int result;
+	struct file_info *orig_file;
 
 	result = lstat (source, &source_stat);
 	if (result != 0) {
@@ -196,6 +256,28 @@ int backup_object (const char *source, const char *backup)
 	}
 
 	strcpy (backup_pack, backup);
+
+	if ((orig_file = find_by_inode (file_list,
+		source_stat.st_dev, source_stat.st_ino)) != NULL) {
+		strcat (backup_pack, ".hardlink");
+		backup_hardlink (source, backup_pack);
+		info ("hardlink backup: %s -> %s", source, orig_file->filename);
+		return 0;
+	}
+
+	if ((orig_file = list_add (file_list)) == NULL) {
+		err ("list_add failed");
+		return -1;
+	}
+	if ((orig_file->filename = malloc (strlen (source) + 1)) == NULL) {
+		err ("malloc failed");
+		return -1;
+	}
+	strcpy (orig_file->filename, source);
+	orig_file->st_dev = source_stat.st_dev;
+	orig_file->st_ino = source_stat.st_ino;
+
+
 	if ((source_stat.st_mode & S_IFMT) == S_IFREG)
 		strcat (backup_pack, ".gz");
 
@@ -286,6 +368,7 @@ int main (int argc, char *argv [])
 		return 1;
 	}
 
+	file_list = NULL;
 	return backup_dir_contents (argv [1], argv [2]);
 }
 
