@@ -3,6 +3,8 @@
 *.so
 !.gitignore
 
+doxygen
+
 useless/useless
 
 backup/backup
